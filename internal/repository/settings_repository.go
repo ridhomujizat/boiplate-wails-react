@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"onx-screen-record/internal/pkg/db/models"
+	models "onx-screen-record/internal/common/model"
 
 	"gorm.io/gorm"
 )
