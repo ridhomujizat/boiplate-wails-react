@@ -36,7 +36,7 @@ func (a *App) Startup(ctx context.Context) {
 		return
 	}
 
-	// a.setupSystemTray()
+	a.setupSystemTray()
 
 }
 

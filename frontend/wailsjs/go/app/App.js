@@ -10,8 +10,20 @@ export function Greet(arg1) {
   return window['go']['app']['App']['Greet'](arg1);
 }
 
+export function HideWindow() {
+  return window['go']['app']['App']['HideWindow']();
+}
+
+export function IsWindowVisible() {
+  return window['go']['app']['App']['IsWindowVisible']();
+}
+
 export function Login(arg1, arg2) {
   return window['go']['app']['App']['Login'](arg1, arg2);
+}
+
+export function MinimizeToTray() {
+  return window['go']['app']['App']['MinimizeToTray']();
 }
 
 export function OnWindowClose() {
@@ -20,4 +32,12 @@ export function OnWindowClose() {
 
 export function Quit() {
   return window['go']['app']['App']['Quit']();
+}
+
+export function ShowWindow() {
+  return window['go']['app']['App']['ShowWindow']();
+}
+
+export function ToggleWindow() {
+  return window['go']['app']['App']['ToggleWindow']();
 }

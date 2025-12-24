@@ -6,8 +6,18 @@ export function GetRequirements():Promise<Array<app.Requirement>>;
 
 export function Greet(arg1:string):Promise<string>;
 
+export function HideWindow():Promise<void>;
+
+export function IsWindowVisible():Promise<boolean>;
+
 export function Login(arg1:string,arg2:string):Promise<app.LoginResponse>;
+
+export function MinimizeToTray():Promise<void>;
 
 export function OnWindowClose():Promise<void>;
 
 export function Quit():Promise<void>;
+
+export function ShowWindow():Promise<void>;
+
+export function ToggleWindow():Promise<void>;
