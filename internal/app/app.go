@@ -1,13 +1,15 @@
-package main
+package app
 
 import (
 	"context"
 	"fmt"
+	appstorage "onx-screen-record/internal/pkg/app-storage"
 )
 
 // App struct
 type App struct {
-	ctx context.Context
+	ctx     context.Context
+	storage appstorage.AppStorage
 }
 
 // NewApp creates a new App application struct
@@ -17,8 +19,19 @@ func NewApp() *App {
 
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
-func (a *App) startup(ctx context.Context) {
+func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
+
+	// untuk initialisasi App Storage (logs, database, dsb)
+	storage, err := appstorage.NewAppStorage("onx-screen-record")
+	if err != nil {
+		panic(fmt.Sprintf("Failed to initialize app storage: %v", err))
+	}
+	a.storage = *storage
+
+	// 2. Contoh: Ambil path untuk SQLite
+	dbPath := storage.GetPath("data.sqlite")
+	fmt.Println("DB Path:", dbPath)
 }
 
 // Greet returns a greeting for the given name
