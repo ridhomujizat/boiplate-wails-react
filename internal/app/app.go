@@ -3,22 +3,34 @@ package app
 import (
 	"context"
 	"fmt"
+	"onx-screen-record/internal/pkg/logger"
 	pathHelper "onx-screen-record/internal/pkg/path-file"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type App struct {
-	ctx  context.Context
-	path *pathHelper.PathHelper
+	appName string
+	ctx     context.Context
+	path    *pathHelper.PathHelper
 }
 
 func NewApp() *App {
-	return &App{}
+	return &App{
+		appName: "onx-screen-record",
+	}
 }
 
 func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
 
-	a.path = pathHelper.NewPathHelper("onx-screen-record")
+	a.path = pathHelper.NewPathHelper(a.appName)
+
+	if err := a.initializeDatabase(); err != nil {
+		logger.Error.Printf("Failed to initialize database: %v", err)
+		runtime.Quit(ctx)
+		return
+	}
 
 }
 
