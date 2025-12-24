@@ -13,3 +13,11 @@ export function Greet(arg1) {
 export function Login(arg1, arg2) {
   return window['go']['app']['App']['Login'](arg1, arg2);
 }
+
+export function OnWindowClose() {
+  return window['go']['app']['App']['OnWindowClose']();
+}
+
+export function Quit() {
+  return window['go']['app']['App']['Quit']();
+}

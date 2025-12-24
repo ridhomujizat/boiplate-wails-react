@@ -7,3 +7,7 @@ export function GetRequirements():Promise<Array<app.Requirement>>;
 export function Greet(arg1:string):Promise<string>;
 
 export function Login(arg1:string,arg2:string):Promise<app.LoginResponse>;
+
+export function OnWindowClose():Promise<void>;
+
+export function Quit():Promise<void>;

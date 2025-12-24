@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"onx-screen-record/internal/pkg/logger"
 	pathHelper "onx-screen-record/internal/pkg/path-file"
+	"onx-screen-record/internal/pkg/tray"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -13,6 +14,9 @@ type App struct {
 	appName string
 	ctx     context.Context
 	path    *pathHelper.PathHelper
+
+	trayManager *tray.TrayManager
+	isVisible   bool
 }
 
 func NewApp() *App {
@@ -31,6 +35,8 @@ func (a *App) Startup(ctx context.Context) {
 		runtime.Quit(ctx)
 		return
 	}
+
+	// a.setupSystemTray()
 
 }
 
@@ -85,4 +91,17 @@ func (a *App) GetRequirements() []Requirement {
 		{ID: "4", Title: "Data Validation", Status: "warning", Progress: 20},
 		{ID: "5", Title: "Testing Coverage", Status: "pending", Progress: 60},
 	}
+}
+
+func (a *App) Quit() {
+	// Perform any necessary cleanup here
+
+	if a.ctx != nil {
+		runtime.Quit(a.ctx)
+	}
+}
+
+func (a *App) OnWindowClose() {
+	// Instead of closing, minimize to tray
+	// a.MinimizeToTray()
 }
