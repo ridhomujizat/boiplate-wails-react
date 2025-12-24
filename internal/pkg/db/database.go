@@ -50,7 +50,8 @@ func initDB(ph *pathHelper.PathHelper) (*gorm.DB, error) {
 		dbPath := filepath.Join(appDataDir, "onx-screen-record.db")
 
 		db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
+			Logger: logger.Default.LogMode(logger.Silent),
+			// Logger: logger.Default.LogMode(logger.Info),
 		})
 		if err != nil {
 			initErr = fmt.Errorf("failed to connect to database: %w", err)
