@@ -6,6 +6,7 @@ import (
 	"onx-screen-record/internal/pkg/logger"
 	pathHelper "onx-screen-record/internal/pkg/path-file"
 	"onx-screen-record/internal/pkg/tray"
+	"onx-screen-record/internal/service/integration"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -16,6 +17,7 @@ type App struct {
 	path    *pathHelper.PathHelper
 
 	trayManager *tray.TrayManager
+	httpServer  *integration.Server
 	isVisible   bool
 }
 
@@ -37,6 +39,9 @@ func (a *App) Startup(ctx context.Context) {
 	}
 
 	a.setupSystemTray()
+
+	// Start HTTP server for health checks
+	a.startHTTPServer()
 
 }
 
