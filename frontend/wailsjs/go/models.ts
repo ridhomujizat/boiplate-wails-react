@@ -1,5 +1,21 @@
 export namespace app {
 	
+	export class AudioDevice {
+	    id: string;
+	    name: string;
+	    type: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AudioDevice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.type = source["type"];
+	    }
+	}
 	export class LoginResponse {
 	    success: boolean;
 	    message: string;
@@ -14,6 +30,20 @@ export namespace app {
 	        this.success = source["success"];
 	        this.message = source["message"];
 	        this.token = source["token"];
+	    }
+	}
+	export class PermissionStatus {
+	    granted: boolean;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PermissionStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.granted = source["granted"];
+	        this.message = source["message"];
 	    }
 	}
 	export class Requirement {
@@ -53,6 +83,34 @@ export namespace app {
 
 export namespace dto {
 	
+	export class AudioSettingRequest {
+	    microphoneId: string;
+	    systemAudioEnabled: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new AudioSettingRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.microphoneId = source["microphoneId"];
+	        this.systemAudioEnabled = source["systemAudioEnabled"];
+	    }
+	}
+	export class AudioSettingResponse {
+	    microphoneId: string;
+	    systemAudioEnabled: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new AudioSettingResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.microphoneId = source["microphoneId"];
+	        this.systemAudioEnabled = source["systemAudioEnabled"];
+	    }
+	}
 	export class SettingRequest {
 	    tenantCode: string;
 	    baseUrl: string;

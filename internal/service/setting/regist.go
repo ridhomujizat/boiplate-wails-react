@@ -13,6 +13,8 @@ type Service struct {
 type IService interface {
 	GetSettings() (*dto.SettingResponse, error)
 	SaveSettings(req dto.SettingRequest) (*dto.SaveSettingResponse, error)
+	GetAudioSettings() (*dto.AudioSettingResponse, error)
+	SaveAudioSettings(req dto.AudioSettingRequest) (*dto.SaveSettingResponse, error)
 }
 
 func NewService(ctx context.Context, rp repository.IRepository) IService {

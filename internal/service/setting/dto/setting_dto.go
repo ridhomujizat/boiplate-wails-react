@@ -19,3 +19,15 @@ type SaveSettingResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
+
+// AudioSettingRequest represents the request body for saving audio settings
+type AudioSettingRequest struct {
+	MicrophoneID       string `json:"microphoneId"`
+	SystemAudioEnabled bool   `json:"systemAudioEnabled"`
+}
+
+// AudioSettingResponse represents the response body for getting audio settings
+type AudioSettingResponse struct {
+	MicrophoneID       string `json:"microphoneId"`
+	SystemAudioEnabled bool   `json:"systemAudioEnabled"`
+}

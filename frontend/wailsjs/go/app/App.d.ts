@@ -3,6 +3,16 @@
 import {app} from '../models';
 import {dto} from '../models';
 
+export function CheckAccessibilityPermission():Promise<app.PermissionStatus>;
+
+export function CheckScreenPermission():Promise<app.PermissionStatus>;
+
+export function GetAudioDevices():Promise<Array<app.AudioDevice>>;
+
+export function GetAudioSettings():Promise<dto.AudioSettingResponse>;
+
+export function GetCaptureDevices():Promise<Array<app.AudioDevice>>;
+
 export function GetRequirements():Promise<Array<app.Requirement>>;
 
 export function GetSettings():Promise<dto.SettingResponse>;
@@ -20,6 +30,12 @@ export function MinimizeToTray():Promise<void>;
 export function OnWindowClose():Promise<void>;
 
 export function Quit():Promise<void>;
+
+export function RequestAccessibilityPermission():Promise<boolean>;
+
+export function RequestScreenPermission():Promise<boolean>;
+
+export function SaveAudioSettings(arg1:dto.AudioSettingRequest):Promise<app.SaveSettingsResponse>;
 
 export function SaveSettings(arg1:dto.SettingRequest):Promise<app.SaveSettingsResponse>;
 

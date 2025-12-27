@@ -18,15 +18,3 @@ type AppSettings struct {
 func (AppSettings) TableName() string {
 	return "app_settings"
 }
-
-// Common setting keys
-const (
-	SettingKeyAutoStart        = "auto_start"
-	SettingKeyRecordingQuality = "recording_quality"
-	SettingKeyStoragePath      = "storage_path"
-	SettingKeyMaxStorageGB     = "max_storage_gb"
-	SettingKeyNotifications    = "notifications_enabled"
-	SettingKeyHotkey           = "hotkey"
-	SettingKeyLanguage         = "language"
-	SettingKeyTheme            = "theme"
-)

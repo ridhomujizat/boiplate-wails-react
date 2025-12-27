@@ -3,6 +3,7 @@ module onx-screen-record
 go 1.24.0
 
 require (
+	github.com/gen2brain/malgo v0.11.24
 	github.com/getlantern/systray v1.2.2
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-playground/validator/v10 v10.30.0
