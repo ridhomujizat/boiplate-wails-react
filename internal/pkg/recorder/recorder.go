@@ -34,14 +34,16 @@ type RecordingConfig struct {
 
 // RecorderManager manages screen and audio recording
 type RecorderManager struct {
-	mu            sync.Mutex
-	status        RecordingStatus
-	config        RecordingConfig
-	stopChan      chan struct{}
-	screenCmd     interface{} // *exec.Cmd, platform specific
-	audioRecorder *AudioRecorder
-	tempVideoPath string
-	tempAudioPath string
+	mu                  sync.Mutex
+	status              RecordingStatus
+	config              RecordingConfig
+	stopChan            chan struct{}
+	screenCmd           interface{} // *exec.Cmd, platform specific
+	audioRecorder       *AudioRecorder
+	systemAudioRecorder *SystemAudioRecorder
+	tempVideoPath       string
+	tempAudioPath       string
+	tempSystemAudioPath string
 }
 
 // NewRecorderManager creates a new recorder manager
