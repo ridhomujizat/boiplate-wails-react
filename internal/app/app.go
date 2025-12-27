@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"onx-screen-record/internal/pkg/logger"
 	pathHelper "onx-screen-record/internal/pkg/path-file"
+	"onx-screen-record/internal/pkg/recorder"
 	"onx-screen-record/internal/pkg/tray"
 	"onx-screen-record/internal/repository"
 	"onx-screen-record/internal/service/integration"
@@ -24,7 +25,8 @@ type App struct {
 
 	rp repository.IRepository
 
-	setting setting.IService
+	setting  setting.IService
+	recorder *recorder.RecorderManager
 }
 
 func NewApp() *App {
@@ -51,6 +53,13 @@ func (a *App) Startup(ctx context.Context) {
 
 	a.setting = setting.NewService(a.ctx, a.rp)
 
+	// Initialize recorder
+	outputDir, _ := a.path.GetStreamDataDir()
+	tempDir, _ := a.path.GetTempDataDir()
+	a.recorder = recorder.NewRecorderManager(recorder.RecordingConfig{
+		OutputDir: outputDir,
+		TempDir:   tempDir,
+	})
 }
 
 // Greet returns a greeting for the given name

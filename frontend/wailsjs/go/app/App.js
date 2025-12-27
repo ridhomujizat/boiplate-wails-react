@@ -22,6 +22,10 @@ export function GetCaptureDevices() {
   return window['go']['app']['App']['GetCaptureDevices']();
 }
 
+export function GetRecordingStatus() {
+  return window['go']['app']['App']['GetRecordingStatus']();
+}
+
 export function GetRequirements() {
   return window['go']['app']['App']['GetRequirements']();
 }
@@ -76,6 +80,14 @@ export function SaveSettings(arg1) {
 
 export function ShowWindow() {
   return window['go']['app']['App']['ShowWindow']();
+}
+
+export function StartRecording() {
+  return window['go']['app']['App']['StartRecording']();
+}
+
+export function StopRecording() {
+  return window['go']['app']['App']['StopRecording']();
 }
 
 export function ToggleWindow() {

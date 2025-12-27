@@ -3,6 +3,7 @@ package app
 import (
 	"onx-screen-record/internal/pkg/audio"
 	"onx-screen-record/internal/pkg/permission"
+	"onx-screen-record/internal/pkg/recorder"
 	dtoSetting "onx-screen-record/internal/service/setting/dto"
 )
 
@@ -145,5 +146,83 @@ func (a *App) SaveAudioSettings(req dtoSetting.AudioSettingRequest) SaveSettings
 	return SaveSettingsResponse{
 		Success: result.Success,
 		Message: result.Message,
+	}
+}
+
+// RecordingStatus represents the current recording state
+type RecordingStatus struct {
+	State    string `json:"state"`
+	Duration int64  `json:"duration"`
+	FilePath string `json:"filePath"`
+	Error    string `json:"error"`
+}
+
+// StartRecordingResponse is the response after starting recording
+type StartRecordingResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+// StopRecordingResponse is the response after stopping recording
+type StopRecordingResponse struct {
+	Success  bool   `json:"success"`
+	Message  string `json:"message"`
+	FilePath string `json:"filePath"`
+}
+
+// StartRecording starts screen and audio recording
+func (a *App) StartRecording() StartRecordingResponse {
+	// Get audio settings to configure microphone
+	audioSettings, _ := a.setting.GetAudioSettings()
+
+	// Get paths for recording
+	outputDir, _ := a.path.GetStreamDataDir()
+	tempDir, _ := a.path.GetTempDataDir()
+
+	// Update recorder config with current settings
+	a.recorder.UpdateConfig(recorder.RecordingConfig{
+		MicrophoneID:       audioSettings.MicrophoneID,
+		SystemAudioEnabled: audioSettings.SystemAudioEnabled,
+		OutputDir:          outputDir,
+		TempDir:            tempDir,
+	})
+
+	if err := a.recorder.StartRecording(); err != nil {
+		return StartRecordingResponse{
+			Success: false,
+			Message: err.Error(),
+		}
+	}
+
+	return StartRecordingResponse{
+		Success: true,
+		Message: "Recording started",
+	}
+}
+
+// StopRecording stops recording and returns the file path
+func (a *App) StopRecording() StopRecordingResponse {
+	filePath, err := a.recorder.StopRecording()
+	if err != nil {
+		return StopRecordingResponse{
+			Success: false,
+			Message: err.Error(),
+		}
+	}
+	return StopRecordingResponse{
+		Success:  true,
+		Message:  "Recording saved",
+		FilePath: filePath,
+	}
+}
+
+// GetRecordingStatus returns the current recording status
+func (a *App) GetRecordingStatus() RecordingStatus {
+	status := a.recorder.GetStatus()
+	return RecordingStatus{
+		State:    string(status.State),
+		Duration: status.Duration,
+		FilePath: status.FilePath,
+		Error:    status.Error,
 	}
 }

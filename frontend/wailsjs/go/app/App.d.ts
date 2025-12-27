@@ -13,6 +13,8 @@ export function GetAudioSettings():Promise<dto.AudioSettingResponse>;
 
 export function GetCaptureDevices():Promise<Array<app.AudioDevice>>;
 
+export function GetRecordingStatus():Promise<app.RecordingStatus>;
+
 export function GetRequirements():Promise<Array<app.Requirement>>;
 
 export function GetSettings():Promise<dto.SettingResponse>;
@@ -40,5 +42,9 @@ export function SaveAudioSettings(arg1:dto.AudioSettingRequest):Promise<app.Save
 export function SaveSettings(arg1:dto.SettingRequest):Promise<app.SaveSettingsResponse>;
 
 export function ShowWindow():Promise<void>;
+
+export function StartRecording():Promise<app.StartRecordingResponse>;
+
+export function StopRecording():Promise<app.StopRecordingResponse>;
 
 export function ToggleWindow():Promise<void>;

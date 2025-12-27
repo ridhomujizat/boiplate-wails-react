@@ -46,6 +46,24 @@ export namespace app {
 	        this.message = source["message"];
 	    }
 	}
+	export class RecordingStatus {
+	    state: string;
+	    duration: number;
+	    filePath: string;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RecordingStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.state = source["state"];
+	        this.duration = source["duration"];
+	        this.filePath = source["filePath"];
+	        this.error = source["error"];
+	    }
+	}
 	export class Requirement {
 	    id: string;
 	    title: string;
@@ -76,6 +94,36 @@ export namespace app {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.success = source["success"];
 	        this.message = source["message"];
+	    }
+	}
+	export class StartRecordingResponse {
+	    success: boolean;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new StartRecordingResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.message = source["message"];
+	    }
+	}
+	export class StopRecordingResponse {
+	    success: boolean;
+	    message: string;
+	    filePath: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new StopRecordingResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.message = source["message"];
+	        this.filePath = source["filePath"];
 	    }
 	}
 

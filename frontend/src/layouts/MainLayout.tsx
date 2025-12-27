@@ -35,6 +35,11 @@ const MainLayout: React.FC = () => {
             icon: <SettingOutlined />,
             label: 'Settings',
         },
+        {
+            key: '/recording',
+            icon: <SettingOutlined />,
+            label: 'Recording',
+        },
     ];
 
     const handleMenuClick = ({ key }: { key: string }) => {
