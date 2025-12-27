@@ -11,7 +11,7 @@ import (
 )
 
 type App struct {
-	appName string
+	AppName string
 	ctx     context.Context
 	path    *pathHelper.PathHelper
 
@@ -21,14 +21,14 @@ type App struct {
 
 func NewApp() *App {
 	return &App{
-		appName: "onx-screen-record",
+		AppName: "onx-screen-record",
 	}
 }
 
 func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
 
-	a.path = pathHelper.NewPathHelper(a.appName)
+	a.path = pathHelper.NewPathHelper(a.AppName)
 
 	if err := a.initializeDatabase(); err != nil {
 		logger.Error.Printf("Failed to initialize database: %v", err)

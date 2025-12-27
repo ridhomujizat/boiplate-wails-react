@@ -5,6 +5,8 @@ package app
 
 import (
 	"onx-screen-record/internal/pkg/tray"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // setupSystemTray initializes the system tray (no-op for macOS)
@@ -27,9 +29,7 @@ func (a *App) ShowWindow() {
 
 // HideWindow hides the main window to system tray (no-op for macOS)
 func (a *App) HideWindow() {
-	if a.trayManager != nil {
-		a.trayManager.HideWindow()
-	}
+	runtime.Hide(a.ctx)
 }
 
 // ToggleWindow toggles window visibility (no-op for macOS)

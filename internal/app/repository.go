@@ -5,7 +5,7 @@ import (
 )
 
 func (a *App) initializeDatabase() error {
-	database, err := db.NewDatabase(a.appName, a.path)
+	database, err := db.NewDatabase(a.AppName, a.path)
 	if err != nil {
 		return err
 	}
