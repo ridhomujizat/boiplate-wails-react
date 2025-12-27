@@ -34,33 +34,9 @@ func (s *Server) healthHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// livenessHandler returns the liveness probe endpoint (for K8s)
 func (s *Server) livenessHandler(c *gin.Context) {
 	response := dto.HealthResponse{
 		Status:    "alive",
-		Timestamp: time.Now(),
-	}
-
-	c.JSON(http.StatusOK, response)
-}
-
-// readinessHandler returns the readiness probe endpoint (for K8s)
-func (s *Server) readinessHandler(c *gin.Context) {
-	// Add your readiness checks here (e.g., database connectivity)
-	isReady := true
-	status := "ready"
-
-	if !isReady {
-		status = "not_ready"
-		c.JSON(http.StatusServiceUnavailable, dto.HealthResponse{
-			Status:    status,
-			Timestamp: time.Now(),
-		})
-		return
-	}
-
-	response := dto.HealthResponse{
-		Status:    status,
 		Timestamp: time.Now(),
 	}
 

@@ -10,35 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Server represents the HTTP server
-type Server struct {
-	engine     *gin.Engine
-	httpServer *http.Server
-	port       int
-}
-
-// Config holds server configuration
-type Config struct {
-	Port int
-	Mode string // "debug", "release", "test"
-}
-
 // DefaultConfig returns default server configuration
 func DefaultConfig() *Config {
 	return &Config{
 		Port: 8080,
 		Mode: gin.ReleaseMode,
 	}
-}
-
-// NewServer creates a new HTTP server instance
-
-// registerRoutes registers all API routes
-func (s *Server) registerRoutes() {
-	// Health check endpoints
-	s.engine.GET("/health", s.healthHandler)
-	s.engine.GET("/health/live", s.livenessHandler)
-	s.engine.GET("/health/ready", s.readinessHandler)
 }
 
 // Start starts the HTTP server
