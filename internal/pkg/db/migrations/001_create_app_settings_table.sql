@@ -16,3 +16,5 @@ INSERT OR IGNORE INTO app_settings (key, value, type) VALUES
 ('tenant', NULL, 'string'),
 ('baseurl', NULL, 'string'),
 ('mqtt', NULL, 'string');
+('microphone', NULL, 'string'),
+('systemaudio', NULL, 'boolean');

@@ -1,13 +1,24 @@
 package recorder
 
 import (
+	"bytes"
+	_ "embed"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gen2brain/malgo"
+	"github.com/gopxl/beep"
+	"github.com/gopxl/beep/effects"
+	"github.com/gopxl/beep/mp3"
+	"github.com/gopxl/beep/speaker"
 )
+
+//go:embed notif.mp3
+var notifSound []byte
 
 // SystemAudioRecorder handles system audio (loopback) recording using malgo
 type SystemAudioRecorder struct {
@@ -29,6 +40,43 @@ func NewSystemAudioRecorder(outputPath string) (*SystemAudioRecorder, error) {
 		channels:   2,
 		samples:    make([]byte, 0),
 	}, nil
+}
+
+// playTriggerSound plays a short notification sound to wake up the loopback capture
+func (s *SystemAudioRecorder) playTriggerSound() error {
+	// Decode mp3 from embedded bytes
+	reader := io.NopCloser(bytes.NewReader(notifSound))
+	streamer, format, err := mp3.Decode(reader)
+	if err != nil {
+		return fmt.Errorf("failed to decode trigger sound: %w", err)
+	}
+	defer streamer.Close()
+
+	// Initialize speaker with the format
+	err = speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+	if err != nil {
+		return fmt.Errorf("failed to init speaker: %w", err)
+	}
+
+	// Lower volume to 10% (-20 dB)
+	// Volume in beep uses decibels, -20 dB ≈ 10% volume
+	volume := &effects.Volume{
+		Streamer: streamer,
+		Base:     2,
+		Volume:   -20, // -20 dB = 10% volume
+		Silent:   false,
+	}
+
+	// Create a channel to wait for playback to complete
+	done := make(chan bool)
+	speaker.Play(beep.Seq(volume, beep.Callback(func() {
+		done <- true
+	})))
+
+	// Wait for sound to finish
+	<-done
+
+	return nil
 }
 
 // Start begins system audio recording (loopback capture)
@@ -84,6 +132,12 @@ func (s *SystemAudioRecorder) Start() error {
 		ctx.Free()
 		return fmt.Errorf("failed to start loopback device: %w", err)
 	}
+
+	// Play trigger sound to wake up loopback capture and ensure sync
+	// This runs in background so recording can start capturing immediately
+	go func() {
+		s.playTriggerSound()
+	}()
 
 	return nil
 }
