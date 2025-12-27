@@ -6,6 +6,10 @@ export function GetRequirements() {
   return window['go']['app']['App']['GetRequirements']();
 }
 
+export function GetSettings() {
+  return window['go']['app']['App']['GetSettings']();
+}
+
 export function Greet(arg1) {
   return window['go']['app']['App']['Greet'](arg1);
 }
@@ -32,6 +36,10 @@ export function OnWindowClose() {
 
 export function Quit() {
   return window['go']['app']['App']['Quit']();
+}
+
+export function SaveSettings(arg1) {
+  return window['go']['app']['App']['SaveSettings'](arg1);
 }
 
 export function ShowWindow() {

@@ -5,6 +5,7 @@ import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import ProtectedRoute from './components/ProtectedRoute';
+import Setting from './pages/Setting';
 
 const theme = {
     token: {
@@ -34,7 +35,7 @@ function AppRoutes() {
             >
                 <Route index element={<Home />} />
                 <Route path="profile" element={<div className="p-6">Profile Page</div>} />
-                <Route path="settings" element={<div className="p-6">Settings Page</div>} />
+                <Route path="settings" element={<Setting />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
