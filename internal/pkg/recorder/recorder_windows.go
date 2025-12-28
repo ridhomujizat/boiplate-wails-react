@@ -35,7 +35,14 @@ func (r *RecorderManager) StartRecording() error {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 
+	// Get actual screen dimensions (reduced to 30% for smaller file size)
+	width, height, err := GetDisplayBounds(30)
+	if err != nil {
+		return fmt.Errorf("failed to get display bounds: %w", err)
+	}
+
 	// Start FFmpeg screen capture using gdigrab
+	scaleFilter := fmt.Sprintf("scale=%d:%d", width, height)
 	screenCmd := exec.Command("ffmpeg",
 		"-f", "gdigrab",
 		"-framerate", "15",
@@ -43,7 +50,7 @@ func (r *RecorderManager) StartRecording() error {
 		"-c:v", "libx264",
 		"-preset", "medium",
 		"-crf", "28",
-		"-vf", "scale=1280:720",
+		"-vf", scaleFilter,
 		"-pix_fmt", "yuv420p",
 		"-y",
 		r.tempVideoPath,
