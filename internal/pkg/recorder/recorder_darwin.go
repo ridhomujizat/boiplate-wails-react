@@ -36,10 +36,12 @@ func (r *RecorderManager) StartRecording() error {
 	screenCmd := exec.Command("ffmpeg",
 		"-f", "avfoundation",
 		"-capture_cursor", "1",
-		"-framerate", "30",
+		"-framerate", "15",
 		"-i", "Capture screen 0:none",
 		"-c:v", "libx264",
-		"-preset", "ultrafast",
+		"-preset", "medium",
+		"-crf", "28",
+		"-vf", "scale=1280:720",
 		"-pix_fmt", "yuv420p",
 		"-y",
 		r.tempVideoPath,
@@ -126,6 +128,14 @@ func (r *RecorderManager) StopRecording() (string, error) {
 	os.Remove(r.tempVideoPath)
 	os.Remove(r.tempAudioPath)
 
+	// Convert MP4 to WebM
+	// webmPath := convertToWebM(outputPath)
+	// if webmPath != "" {
+	// 	// Remove the MP4 file since WebM conversion succeeded
+	// 	os.Remove(outputPath)
+	// 	outputPath = webmPath
+	// }
+
 	r.status = RecordingStatus{
 		State:    StateIdle,
 		FilePath: outputPath,
@@ -151,4 +161,34 @@ func (r *RecorderManager) muxVideoAudio(videoPath, audioPath, outputPath string)
 	}
 
 	return nil
+}
+
+// convertToWebM converts MP4 file to WebM format using FFmpeg
+func convertToWebM(inputPath string) string {
+	// Generate WebM output path by changing extension
+	webmPath := inputPath[:len(inputPath)-4] + ".webm"
+
+	// Convert using FFmpeg with VP9 video codec and Opus audio codec
+	// Using higher CRF (40) for better compression while maintaining text readability
+	cmd := exec.Command("ffmpeg",
+		"-i", inputPath,
+		"-c:v", "libvpx-vp9",
+		"-crf", "40",
+		"-b:v", "0",
+		"-c:a", "libopus",
+		"-b:a", "64k",
+		"-y",
+		webmPath,
+	)
+
+	// Suppress FFmpeg output
+	cmd.Stderr = nil
+	cmd.Stdout = nil
+
+	if err := cmd.Run(); err != nil {
+		// Return empty string on error to indicate conversion failed
+		return ""
+	}
+
+	return webmPath
 }
