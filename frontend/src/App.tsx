@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import ProtectedRoute from './components/ProtectedRoute';
 import Setting from './pages/Setting';
 import Recording from './pages/Recording';
+import Activity from './pages/Activity';
 
 const theme = {
     token: {
@@ -38,6 +39,7 @@ function AppRoutes() {
                 <Route path="profile" element={<div className="p-6">Profile Page</div>} />
                 <Route path="settings" element={<Setting />} />
                 <Route path="recording" element={<Recording />} />
+                <Route path="activity" element={<Activity />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

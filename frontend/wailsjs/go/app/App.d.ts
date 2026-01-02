@@ -7,11 +7,19 @@ export function CheckAccessibilityPermission():Promise<app.PermissionStatus>;
 
 export function CheckScreenPermission():Promise<app.PermissionStatus>;
 
+export function GetActivitySettings():Promise<dto.ActivitySettingResponse>;
+
+export function GetActivitySummary(arg1:app.DateRange):Promise<Array<app.ActivitySummary>>;
+
+export function GetActivityTimeline(arg1:app.DateRange):Promise<Array<app.TimelineEvent>>;
+
 export function GetAudioDevices():Promise<Array<app.AudioDevice>>;
 
 export function GetAudioSettings():Promise<dto.AudioSettingResponse>;
 
 export function GetCaptureDevices():Promise<Array<app.AudioDevice>>;
+
+export function GetDashboardStats(arg1:app.DateRange):Promise<app.DashboardStats>;
 
 export function GetRecordingStatus():Promise<app.RecordingStatus>;
 
@@ -19,9 +27,13 @@ export function GetRequirements():Promise<Array<app.Requirement>>;
 
 export function GetSettings():Promise<dto.SettingResponse>;
 
+export function GetTopApplications(arg1:app.DateRange,arg2:number):Promise<Array<app.TopApplication>>;
+
 export function Greet(arg1:string):Promise<string>;
 
 export function HideWindow():Promise<void>;
+
+export function IsActivityTrackingActive():Promise<boolean>;
 
 export function IsWindowVisible():Promise<boolean>;
 
@@ -37,13 +49,19 @@ export function RequestAccessibilityPermission():Promise<boolean>;
 
 export function RequestScreenPermission():Promise<boolean>;
 
+export function SaveActivitySettings(arg1:dto.ActivitySettingRequest):Promise<app.SaveSettingsResponse>;
+
 export function SaveAudioSettings(arg1:dto.AudioSettingRequest):Promise<app.SaveSettingsResponse>;
 
 export function SaveSettings(arg1:dto.SettingRequest):Promise<app.SaveSettingsResponse>;
 
 export function ShowWindow():Promise<void>;
 
+export function StartActivityTracking():Promise<boolean>;
+
 export function StartRecording():Promise<app.StartRecordingResponse>;
+
+export function StopActivityTracking():Promise<boolean>;
 
 export function StopRecording():Promise<app.StopRecordingResponse>;
 

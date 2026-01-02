@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Typography, message, Space, Spin, Select, Switch, Tag, Divider } from 'antd';
+import { Card, Form, Input, Button, Typography, message, Space, Spin, Select, Switch, Tag, Divider, InputNumber } from 'antd';
 import {
     SettingOutlined,
     SaveOutlined,
@@ -12,7 +12,8 @@ import {
     AudioOutlined,
     SoundOutlined,
     CheckCircleOutlined,
-    ExclamationCircleOutlined
+    ExclamationCircleOutlined,
+    FieldTimeOutlined
 } from '@ant-design/icons';
 import {
     GetSettings,
@@ -23,7 +24,9 @@ import {
     RequestAccessibilityPermission,
     GetCaptureDevices,
     GetAudioSettings,
-    SaveAudioSettings
+    SaveAudioSettings,
+    GetActivitySettings,
+    SaveActivitySettings
 } from '../../wailsjs/go/app/App';
 import { app } from '../../wailsjs/go/models';
 
@@ -41,6 +44,11 @@ interface AudioFormValues {
     systemAudioEnabled: boolean;
 }
 
+interface ActivityFormValues {
+    pollingInterval: number;
+    afkThreshold: number;
+}
+
 interface PermissionState {
     screen: { granted: boolean; message: string };
     accessibility: { granted: boolean; message: string };
@@ -49,9 +57,11 @@ interface PermissionState {
 const Setting: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [audioLoading, setAudioLoading] = useState(false);
+    const [activityLoading, setActivityLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     const [form] = Form.useForm<SettingFormValues>();
     const [audioForm] = Form.useForm<AudioFormValues>();
+    const [activityForm] = Form.useForm<ActivityFormValues>();
 
     // Permission states
     const [permissions, setPermissions] = useState<PermissionState>({
@@ -67,6 +77,7 @@ const Setting: React.FC = () => {
         loadSettings();
         checkPermissions();
         loadAudioDevices();
+        loadActivitySettings();
     }, []);
 
     const loadSettings = async () => {
@@ -114,6 +125,18 @@ const Setting: React.FC = () => {
         }
     };
 
+    const loadActivitySettings = async () => {
+        try {
+            const settings = await GetActivitySettings();
+            activityForm.setFieldsValue({
+                pollingInterval: settings.pollingInterval || 5,
+                afkThreshold: settings.afkThreshold || 180
+            });
+        } catch (error) {
+            console.error('Failed to load activity settings:', error);
+        }
+    };
+
     const handleSave = async (values: SettingFormValues) => {
         setLoading(true);
         try {
@@ -154,6 +177,27 @@ const Setting: React.FC = () => {
             message.error('Failed to save audio settings');
         } finally {
             setAudioLoading(false);
+        }
+    };
+
+    const handleActivitySave = async (values: ActivityFormValues) => {
+        setActivityLoading(true);
+        try {
+            const result = await SaveActivitySettings({
+                pollingInterval: values.pollingInterval,
+                afkThreshold: values.afkThreshold
+            });
+
+            if (result.success) {
+                message.success(result.message || 'Activity settings saved successfully!');
+            } else {
+                message.error(result.message || 'Failed to save activity settings');
+            }
+        } catch (error) {
+            console.error('Failed to save activity settings:', error);
+            message.error('Failed to save activity settings');
+        } finally {
+            setActivityLoading(false);
         }
     };
 
@@ -343,6 +387,83 @@ const Setting: React.FC = () => {
                             }}
                         >
                             Save Audio Settings
+                        </Button>
+                    </Form.Item>
+                </Form>
+            </Card>
+
+            {/* Activity Tracking Section */}
+            <Card
+                title={
+                    <Space>
+                        <FieldTimeOutlined style={{ color: '#7c3aed' }} />
+                        <Text strong>Activity Tracking</Text>
+                    </Space>
+                }
+                style={{ marginBottom: 24 }}
+            >
+                <Form
+                    form={activityForm}
+                    layout="vertical"
+                    onFinish={handleActivitySave}
+                    initialValues={{
+                        pollingInterval: 5,
+                        afkThreshold: 180
+                    }}
+                >
+                    <Form.Item
+                        label={
+                            <Space>
+                                <FieldTimeOutlined style={{ color: '#7c3aed' }} />
+                                <span>Polling Interval</span>
+                            </Space>
+                        }
+                        name="pollingInterval"
+                        extra="How often to check active window (seconds)"
+                        rules={[{ required: true, message: 'Please enter polling interval' }]}
+                    >
+                        <InputNumber
+                            min={1}
+                            max={60}
+                            size="large"
+                            style={{ width: '100%' }}
+                            placeholder="5"
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        label={
+                            <Space>
+                                <DesktopOutlined style={{ color: '#7c3aed' }} />
+                                <span>AFK Threshold</span>
+                            </Space>
+                        }
+                        name="afkThreshold"
+                        extra="Idle time before marking as away (seconds)"
+                        rules={[{ required: true, message: 'Please enter AFK threshold' }]}
+                    >
+                        <InputNumber
+                            min={10}
+                            max={3600}
+                            size="large"
+                            style={{ width: '100%' }}
+                            placeholder="180"
+                        />
+                    </Form.Item>
+
+                    <Form.Item style={{ marginTop: 16, marginBottom: 0 }}>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            icon={<SaveOutlined />}
+                            loading={activityLoading}
+                            size="large"
+                            style={{
+                                backgroundColor: '#7c3aed',
+                                borderColor: '#7c3aed'
+                            }}
+                        >
+                            Save Activity Settings
                         </Button>
                     </Form.Item>
                 </Form>

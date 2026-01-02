@@ -226,3 +226,33 @@ func (a *App) GetRecordingStatus() RecordingStatus {
 		Error:    status.Error,
 	}
 }
+
+func (a *App) GetActivitySettings() dtoSetting.ActivitySettingResponse {
+	result, err := a.setting.GetActivitySettings()
+	if err != nil {
+		return dtoSetting.ActivitySettingResponse{
+			PollingInterval: 5,
+			AFKThreshold:    180,
+		}
+	}
+	return *result
+}
+
+func (a *App) SaveActivitySettings(req dtoSetting.ActivitySettingRequest) SaveSettingsResponse {
+	result, err := a.setting.SaveActivitySettings(req)
+	if err != nil {
+		return SaveSettingsResponse{
+			Success: false,
+			Message: err.Error(),
+		}
+	}
+
+	if a.activityTracker != nil {
+		a.activityTracker.UpdateConfig(req.PollingInterval, req.AFKThreshold)
+	}
+
+	return SaveSettingsResponse{
+		Success: result.Success,
+		Message: result.Message,
+	}
+}

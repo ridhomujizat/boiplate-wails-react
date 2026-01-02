@@ -6,7 +6,9 @@ import {
     UserOutlined,
     LogoutOutlined,
     MenuFoldOutlined,
-    MenuUnfoldOutlined
+    MenuUnfoldOutlined,
+    VideoCameraOutlined,
+    BarChartOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,6 +28,16 @@ const MainLayout: React.FC = () => {
             label: 'Home',
         },
         {
+            key: '/activity',
+            icon: <BarChartOutlined />,
+            label: 'Activity',
+        },
+        {
+            key: '/recording',
+            icon: <VideoCameraOutlined />,
+            label: 'Recording',
+        },
+        {
             key: '/profile',
             icon: <UserOutlined />,
             label: 'Profile',
@@ -34,11 +46,6 @@ const MainLayout: React.FC = () => {
             key: '/settings',
             icon: <SettingOutlined />,
             label: 'Settings',
-        },
-        {
-            key: '/recording',
-            icon: <SettingOutlined />,
-            label: 'Recording',
         },
     ];
 

@@ -1,5 +1,25 @@
 export namespace app {
 	
+	export class ActivitySummary {
+	    appName: string;
+	    activeTime: number;
+	    afkTime: number;
+	    sessionCount: number;
+	    percentage: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ActivitySummary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.appName = source["appName"];
+	        this.activeTime = source["activeTime"];
+	        this.afkTime = source["afkTime"];
+	        this.sessionCount = source["sessionCount"];
+	        this.percentage = source["percentage"];
+	    }
+	}
 	export class AudioDevice {
 	    id: string;
 	    name: string;
@@ -14,6 +34,38 @@ export namespace app {
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.type = source["type"];
+	    }
+	}
+	export class DashboardStats {
+	    totalActiveTime: number;
+	    totalAfkTime: number;
+	    totalApps: number;
+	    topApp: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DashboardStats(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.totalActiveTime = source["totalActiveTime"];
+	        this.totalAfkTime = source["totalAfkTime"];
+	        this.totalApps = source["totalApps"];
+	        this.topApp = source["topApp"];
+	    }
+	}
+	export class DateRange {
+	    startDate: string;
+	    endDate: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DateRange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.startDate = source["startDate"];
+	        this.endDate = source["endDate"];
 	    }
 	}
 	export class LoginResponse {
@@ -126,11 +178,81 @@ export namespace app {
 	        this.filePath = source["filePath"];
 	    }
 	}
+	export class TimelineEvent {
+	    id: number;
+	    appName: string;
+	    windowTitle: string;
+	    startTime: string;
+	    endTime: string;
+	    duration: number;
+	    status: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TimelineEvent(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.appName = source["appName"];
+	        this.windowTitle = source["windowTitle"];
+	        this.startTime = source["startTime"];
+	        this.endTime = source["endTime"];
+	        this.duration = source["duration"];
+	        this.status = source["status"];
+	    }
+	}
+	export class TopApplication {
+	    appName: string;
+	    totalDuration: number;
+	    sessionCount: number;
+	    percentage: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new TopApplication(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.appName = source["appName"];
+	        this.totalDuration = source["totalDuration"];
+	        this.sessionCount = source["sessionCount"];
+	        this.percentage = source["percentage"];
+	    }
+	}
 
 }
 
 export namespace dto {
 	
+	export class ActivitySettingRequest {
+	    pollingInterval: number;
+	    afkThreshold: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ActivitySettingRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.pollingInterval = source["pollingInterval"];
+	        this.afkThreshold = source["afkThreshold"];
+	    }
+	}
+	export class ActivitySettingResponse {
+	    pollingInterval: number;
+	    afkThreshold: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ActivitySettingResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.pollingInterval = source["pollingInterval"];
+	        this.afkThreshold = source["afkThreshold"];
+	    }
+	}
 	export class AudioSettingRequest {
 	    microphoneId: string;
 	    systemAudioEnabled: boolean;

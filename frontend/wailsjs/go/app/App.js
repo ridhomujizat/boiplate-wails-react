@@ -10,6 +10,18 @@ export function CheckScreenPermission() {
   return window['go']['app']['App']['CheckScreenPermission']();
 }
 
+export function GetActivitySettings() {
+  return window['go']['app']['App']['GetActivitySettings']();
+}
+
+export function GetActivitySummary(arg1) {
+  return window['go']['app']['App']['GetActivitySummary'](arg1);
+}
+
+export function GetActivityTimeline(arg1) {
+  return window['go']['app']['App']['GetActivityTimeline'](arg1);
+}
+
 export function GetAudioDevices() {
   return window['go']['app']['App']['GetAudioDevices']();
 }
@@ -20,6 +32,10 @@ export function GetAudioSettings() {
 
 export function GetCaptureDevices() {
   return window['go']['app']['App']['GetCaptureDevices']();
+}
+
+export function GetDashboardStats(arg1) {
+  return window['go']['app']['App']['GetDashboardStats'](arg1);
 }
 
 export function GetRecordingStatus() {
@@ -34,12 +50,20 @@ export function GetSettings() {
   return window['go']['app']['App']['GetSettings']();
 }
 
+export function GetTopApplications(arg1, arg2) {
+  return window['go']['app']['App']['GetTopApplications'](arg1, arg2);
+}
+
 export function Greet(arg1) {
   return window['go']['app']['App']['Greet'](arg1);
 }
 
 export function HideWindow() {
   return window['go']['app']['App']['HideWindow']();
+}
+
+export function IsActivityTrackingActive() {
+  return window['go']['app']['App']['IsActivityTrackingActive']();
 }
 
 export function IsWindowVisible() {
@@ -70,6 +94,10 @@ export function RequestScreenPermission() {
   return window['go']['app']['App']['RequestScreenPermission']();
 }
 
+export function SaveActivitySettings(arg1) {
+  return window['go']['app']['App']['SaveActivitySettings'](arg1);
+}
+
 export function SaveAudioSettings(arg1) {
   return window['go']['app']['App']['SaveAudioSettings'](arg1);
 }
@@ -82,8 +110,16 @@ export function ShowWindow() {
   return window['go']['app']['App']['ShowWindow']();
 }
 
+export function StartActivityTracking() {
+  return window['go']['app']['App']['StartActivityTracking']();
+}
+
 export function StartRecording() {
   return window['go']['app']['App']['StartRecording']();
+}
+
+export function StopActivityTracking() {
+  return window['go']['app']['App']['StopActivityTracking']();
 }
 
 export function StopRecording() {

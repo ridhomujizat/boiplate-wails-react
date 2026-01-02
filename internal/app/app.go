@@ -3,11 +3,14 @@ package app
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"onx-screen-record/internal/pkg/logger"
 	pathHelper "onx-screen-record/internal/pkg/path-file"
 	"onx-screen-record/internal/pkg/recorder"
 	"onx-screen-record/internal/pkg/tray"
 	"onx-screen-record/internal/repository"
+	activityService "onx-screen-record/internal/service/activity"
 	"onx-screen-record/internal/service/integration"
 	"onx-screen-record/internal/service/setting"
 
@@ -25,8 +28,9 @@ type App struct {
 
 	rp repository.IRepository
 
-	setting  setting.IService
-	recorder *recorder.RecorderManager
+	setting         setting.IService
+	recorder        *recorder.RecorderManager
+	activityTracker *activityService.Tracker
 }
 
 func NewApp() *App {
@@ -48,18 +52,24 @@ func (a *App) Startup(ctx context.Context) {
 
 	a.setupSystemTray()
 
-	// Start HTTP server for health checks
 	a.startHTTPServer()
 
 	a.setting = setting.NewService(a.ctx, a.rp)
 
-	// Initialize recorder
 	outputDir, _ := a.path.GetStreamDataDir()
 	tempDir, _ := a.path.GetTempDataDir()
 	a.recorder = recorder.NewRecorderManager(recorder.RecordingConfig{
 		OutputDir: outputDir,
 		TempDir:   tempDir,
 	})
+
+	activitySettings, _ := a.setting.GetActivitySettings()
+	a.activityTracker = activityService.NewTracker(&a.rp, activityService.TrackerConfig{
+		PollingInterval: time.Duration(activitySettings.PollingInterval) * time.Second,
+		AFKThreshold:    time.Duration(activitySettings.AFKThreshold) * time.Second,
+		Enabled:         true,
+	})
+	a.activityTracker.Start()
 }
 
 // Greet returns a greeting for the given name
@@ -116,7 +126,9 @@ func (a *App) GetRequirements() []Requirement {
 }
 
 func (a *App) Quit() {
-	// Perform any necessary cleanup here
+	if a.activityTracker != nil {
+		a.activityTracker.Stop()
+	}
 
 	if a.ctx != nil {
 		runtime.Quit(a.ctx)

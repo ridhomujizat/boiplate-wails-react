@@ -31,3 +31,15 @@ type AudioSettingResponse struct {
 	MicrophoneID       string `json:"microphoneId"`
 	SystemAudioEnabled bool   `json:"systemAudioEnabled"`
 }
+
+// ActivitySettingRequest represents the request body for saving activity tracking settings
+type ActivitySettingRequest struct {
+	PollingInterval int `json:"pollingInterval"` // in seconds
+	AFKThreshold    int `json:"afkThreshold"`    // in seconds
+}
+
+// ActivitySettingResponse represents the response body for getting activity tracking settings
+type ActivitySettingResponse struct {
+	PollingInterval int `json:"pollingInterval"` // in seconds
+	AFKThreshold    int `json:"afkThreshold"`    // in seconds
+}

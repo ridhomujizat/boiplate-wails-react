@@ -15,6 +15,8 @@ CREATE INDEX IF NOT EXISTS idx_app_settings_key ON app_settings(key);
 INSERT OR IGNORE INTO app_settings (key, value, type) VALUES
 ('tenant', NULL, 'string'),
 ('baseurl', NULL, 'string'),
-('mqtt', NULL, 'string');
+('mqtt', NULL, 'string'),
 ('microphone', NULL, 'string'),
-('systemaudio', NULL, 'boolean');
+('systemaudio', NULL, 'boolean'),
+('activity_polling_interval', '5', 'int'),
+('activity_afk_threshold', '180', 'int');
