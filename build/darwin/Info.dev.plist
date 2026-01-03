@@ -23,6 +23,10 @@
         <string>true</string>
         <key>NSHumanReadableCopyright</key>
         <string>{{.Info.Copyright}}</string>
+        <key>NSScreenCaptureUsageDescription</key>
+        <string>This app needs screen recording access to capture your screen and system audio.</string>
+        <key>NSMicrophoneUsageDescription</key>
+        <string>This app needs microphone access to record your voice.</string>
         {{if .Info.FileAssociations}}
         <key>CFBundleDocumentTypes</key>
         <array>

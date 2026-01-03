@@ -18,7 +18,7 @@ import {
 
 const { Title, Text } = Typography;
 
-type RecordingState = 'idle' | 'recording' | 'processing' | 'error';
+type RecordingState = 'idle' | 'recording' | 'processing' | 'playing' | 'error';
 
 interface RecordingStatusData {
     state: RecordingState;
@@ -39,7 +39,46 @@ const Recording: React.FC = () => {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        // Poll status while recording
+        const initializeSession = async () => {
+            try {
+                const currentStatus = await GetRecordingStatus();
+                if (currentStatus.state === 'recording') {
+                    setStatus({
+                        state: 'recording',
+                        duration: currentStatus.duration,
+                        filePath: currentStatus.filePath,
+                        error: currentStatus.error
+                    });
+                } else {
+                    setStatus({
+                        state: 'idle',
+                        duration: 0,
+                        filePath: '',
+                        error: ''
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to initialize recording session:', error);
+                setStatus({
+                    state: 'idle',
+                    duration: 0,
+                    filePath: '',
+                    error: ''
+                });
+            }
+        };
+
+        initializeSession();
+
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+        };
+    }, []);
+
+    useEffect(() => {
         if (status.state === 'recording') {
             timerRef.current = setInterval(async () => {
                 try {

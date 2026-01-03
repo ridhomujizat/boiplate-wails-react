@@ -8,10 +8,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
-// StartRecording starts screen and audio recording on macOS
+var recordingStartTime time.Time
+var recordingMutex sync.Mutex
+var sckRecorderInstance *SCKAudioRecorder
+
 func (r *RecorderManager) StartRecording() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -20,25 +24,20 @@ func (r *RecorderManager) StartRecording() error {
 		return fmt.Errorf("recording already in progress")
 	}
 
-	// Generate temp file paths
 	timestamp := time.Now().Format("20060102_150405")
 	r.tempVideoPath = filepath.Join(r.config.TempDir, fmt.Sprintf("video_%s.mp4", timestamp))
 	r.tempAudioPath = filepath.Join(r.config.TempDir, fmt.Sprintf("audio_%s.wav", timestamp))
+	r.tempSystemAudioPath = filepath.Join(r.config.TempDir, fmt.Sprintf("system_audio_%s.wav", timestamp))
 
-	// Ensure temp directory exists
 	if err := os.MkdirAll(r.config.TempDir, 0755); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 
-	// Get actual screen dimensions (reduced to 30% for smaller file size)
 	width, height, err := GetDisplayBounds(30)
 	if err != nil {
 		return fmt.Errorf("failed to get display bounds: %w", err)
 	}
 
-	// Start FFmpeg screen capture using avfoundation
-	// Use "Capture screen 0:none" for screen capture (not camera)
-	// Index 0 is typically the main screen on macOS
 	scaleFilter := fmt.Sprintf("scale=%d:%d", width, height)
 	screenCmd := exec.Command("ffmpeg",
 		"-f", "avfoundation",
@@ -54,7 +53,6 @@ func (r *RecorderManager) StartRecording() error {
 		r.tempVideoPath,
 	)
 
-	// Redirect stderr to suppress FFmpeg output
 	screenCmd.Stderr = nil
 	screenCmd.Stdout = nil
 
@@ -63,16 +61,45 @@ func (r *RecorderManager) StartRecording() error {
 	}
 	r.screenCmd = screenCmd
 
-	// Start audio recording if microphone is selected
+	recordingMutex.Lock()
+	recordingStartTime = time.Now()
+	recordingMutex.Unlock()
+
 	if r.config.MicrophoneID != "" {
 		audioRecorder, err := NewAudioRecorder(r.config.MicrophoneID, r.tempAudioPath)
 		if err != nil {
-			// Stop screen recording if audio fails
+			screenCmd.Process.Kill()
+			return fmt.Errorf("failed to create audio recorder: %w", err)
+		}
+		r.audioRecorder = audioRecorder
+		if err := r.audioRecorder.Start(); err != nil {
 			screenCmd.Process.Kill()
 			return fmt.Errorf("failed to start audio recording: %w", err)
 		}
-		r.audioRecorder = audioRecorder
-		go r.audioRecorder.Start()
+	}
+
+	if r.config.SystemAudioEnabled && IsSystemAudioSupported() {
+		sckRecorder, err := NewSCKAudioRecorder(r.tempSystemAudioPath)
+		if err != nil {
+			if r.audioRecorder != nil {
+				r.audioRecorder.Stop()
+			}
+			screenCmd.Process.Kill()
+			return fmt.Errorf("failed to create system audio recorder: %w", err)
+		}
+		r.systemAudioRecorder = &SystemAudioRecorder{
+			outputPath: r.tempSystemAudioPath,
+			sampleRate: 48000,
+			channels:   2,
+		}
+		if err := sckRecorder.Start(); err != nil {
+			if r.audioRecorder != nil {
+				r.audioRecorder.Stop()
+			}
+			screenCmd.Process.Kill()
+			return fmt.Errorf("failed to start system audio recording: %w", err)
+		}
+		sckRecorderInstance = sckRecorder
 	}
 
 	r.status = RecordingStatus{
@@ -84,7 +111,6 @@ func (r *RecorderManager) StartRecording() error {
 	return nil
 }
 
-// StopRecording stops recording and muxes video + audio
 func (r *RecorderManager) StopRecording() (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -95,34 +121,44 @@ func (r *RecorderManager) StopRecording() (string, error) {
 
 	r.status.State = StateProcessing
 
-	// Stop screen recording
 	if cmd, ok := r.screenCmd.(*exec.Cmd); ok && cmd.Process != nil {
-		// Send 'q' to FFmpeg to gracefully stop
 		cmd.Process.Signal(os.Interrupt)
 		cmd.Wait()
 	}
 
-	// Stop audio recording
 	if r.audioRecorder != nil {
 		r.audioRecorder.Stop()
 	}
 
-	// Generate output file path
+	if sckRecorderInstance != nil {
+		sckRecorderInstance.Stop()
+		sckRecorderInstance = nil
+	}
+
 	timestamp := time.Now().Format("20060102_150405")
 	outputPath := filepath.Join(r.config.OutputDir, fmt.Sprintf("recording_%s.mp4", timestamp))
 
-	// Ensure output directory exists
 	if err := os.MkdirAll(r.config.OutputDir, 0755); err != nil {
 		r.status = RecordingStatus{State: StateError, Error: err.Error()}
 		return "", fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Mux video and audio if audio was recorded
+	hasMicAudio := r.audioRecorder != nil && r.tempAudioPath != "" && fileExists(r.tempAudioPath)
+	hasSystemAudio := r.config.SystemAudioEnabled && IsSystemAudioSupported() && fileExists(r.tempSystemAudioPath)
+
 	var err error
-	if r.audioRecorder != nil && r.tempAudioPath != "" {
+	if hasMicAudio && hasSystemAudio {
+		mixedAudioPath := filepath.Join(r.config.TempDir, fmt.Sprintf("mixed_audio_%s.wav", timestamp))
+		err = r.mixAudioFiles(r.tempAudioPath, r.tempSystemAudioPath, mixedAudioPath)
+		if err == nil {
+			err = r.muxVideoAudio(r.tempVideoPath, mixedAudioPath, outputPath)
+			os.Remove(mixedAudioPath)
+		}
+	} else if hasMicAudio {
 		err = r.muxVideoAudio(r.tempVideoPath, r.tempAudioPath, outputPath)
+	} else if hasSystemAudio {
+		err = r.muxVideoAudio(r.tempVideoPath, r.tempSystemAudioPath, outputPath)
 	} else {
-		// Just copy video if no audio
 		err = os.Rename(r.tempVideoPath, outputPath)
 	}
 
@@ -131,17 +167,12 @@ func (r *RecorderManager) StopRecording() (string, error) {
 		return "", err
 	}
 
-	// Cleanup temp files
 	os.Remove(r.tempVideoPath)
 	os.Remove(r.tempAudioPath)
+	os.Remove(r.tempSystemAudioPath)
 
-	// Convert MP4 to WebM
-	// webmPath := convertToWebM(outputPath)
-	// if webmPath != "" {
-	// 	// Remove the MP4 file since WebM conversion succeeded
-	// 	os.Remove(outputPath)
-	// 	outputPath = webmPath
-	// }
+	r.audioRecorder = nil
+	r.systemAudioRecorder = nil
 
 	r.status = RecordingStatus{
 		State:    StateIdle,
@@ -151,13 +182,14 @@ func (r *RecorderManager) StopRecording() (string, error) {
 	return outputPath, nil
 }
 
-// muxVideoAudio combines video and audio using FFmpeg
 func (r *RecorderManager) muxVideoAudio(videoPath, audioPath, outputPath string) error {
 	cmd := exec.Command("ffmpeg",
 		"-i", videoPath,
 		"-i", audioPath,
 		"-c:v", "copy",
 		"-c:a", "aac",
+		"-af", "aresample=async=1:first_pts=0",
+		"-async", "1",
 		"-shortest",
 		"-y",
 		outputPath,
@@ -170,13 +202,31 @@ func (r *RecorderManager) muxVideoAudio(videoPath, audioPath, outputPath string)
 	return nil
 }
 
-// convertToWebM converts MP4 file to WebM format using FFmpeg
+func (r *RecorderManager) mixAudioFiles(audio1Path, audio2Path, outputPath string) error {
+	cmd := exec.Command("ffmpeg",
+		"-i", audio1Path,
+		"-i", audio2Path,
+		"-filter_complex", "amix=inputs=2:duration=longest:dropout_transition=0",
+		"-c:a", "pcm_s16le",
+		"-y",
+		outputPath,
+	)
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to mix audio files: %w", err)
+	}
+
+	return nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
 func convertToWebM(inputPath string) string {
-	// Generate WebM output path by changing extension
 	webmPath := inputPath[:len(inputPath)-4] + ".webm"
 
-	// Convert using FFmpeg with VP9 video codec and Opus audio codec
-	// Using higher CRF (40) for better compression while maintaining text readability
 	cmd := exec.Command("ffmpeg",
 		"-i", inputPath,
 		"-c:v", "libvpx-vp9",
@@ -188,12 +238,10 @@ func convertToWebM(inputPath string) string {
 		webmPath,
 	)
 
-	// Suppress FFmpeg output
 	cmd.Stderr = nil
 	cmd.Stdout = nil
 
 	if err := cmd.Run(); err != nil {
-		// Return empty string on error to indicate conversion failed
 		return ""
 	}
 
