@@ -58,6 +58,10 @@ export function Greet(arg1) {
   return window['go']['app']['App']['Greet'](arg1);
 }
 
+export function HandleDeepLink(arg1) {
+  return window['go']['app']['App']['HandleDeepLink'](arg1);
+}
+
 export function HideWindow() {
   return window['go']['app']['App']['HideWindow']();
 }
@@ -104,6 +108,10 @@ export function SaveAudioSettings(arg1) {
 
 export function SaveSettings(arg1) {
   return window['go']['app']['App']['SaveSettings'](arg1);
+}
+
+export function SetInitialDeepLink(arg1) {
+  return window['go']['app']['App']['SetInitialDeepLink'](arg1);
 }
 
 export function ShowWindow() {

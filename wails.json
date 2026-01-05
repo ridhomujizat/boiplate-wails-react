@@ -9,5 +9,16 @@
   "author": {
     "name": "ridho",
     "email": "ridhomujizat@gmail.com"
+  },
+  "info": {
+    "productVersion": "1.0.0",
+    "productName": "ONX Screen Record",
+    "protocols": [
+      {
+        "scheme": "onxrecord",
+        "description": "ONX Screen Record Deep Link",
+        "role": "Viewer"
+      }
+    ]
   }
 }

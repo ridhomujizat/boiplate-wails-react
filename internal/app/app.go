@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"onx-screen-record/internal/pkg/logger"
@@ -31,6 +32,8 @@ type App struct {
 	setting         setting.IService
 	recorder        *recorder.RecorderManager
 	activityTracker *activityService.Tracker
+
+	initialDeepLink string // Store initial deep link URL
 }
 
 func NewApp() *App {
@@ -70,6 +73,11 @@ func (a *App) Startup(ctx context.Context) {
 		Enabled:         true,
 	})
 	a.activityTracker.Start()
+
+	// Process initial deep link if present
+	if a.initialDeepLink != "" {
+		a.HandleDeepLink(a.initialDeepLink)
+	}
 }
 
 // Greet returns a greeting for the given name
@@ -138,4 +146,33 @@ func (a *App) Quit() {
 func (a *App) OnWindowClose() {
 	// Instead of closing, minimize to tray
 	// a.MinimizeToTray()
+}
+
+// HandleDeepLink processes incoming deep link URL and prints data to terminal
+func (a *App) HandleDeepLink(deepLinkURL string) {
+	fmt.Println("=== DEEP LINK RECEIVED ===")
+	fmt.Printf("Full URL: %s\n", deepLinkURL)
+
+	// Parse the URL to extract data/token
+	parsed, err := url.Parse(deepLinkURL)
+	if err != nil {
+		fmt.Printf("Error parsing URL: %v\n", err)
+		fmt.Println("=========================")
+		return
+	}
+
+	fmt.Printf("Scheme: %s\n", parsed.Scheme)
+	fmt.Printf("Host: %s\n", parsed.Host)
+	fmt.Printf("Path: %s\n", parsed.Path)
+
+	// Print query parameters
+	for key, values := range parsed.Query() {
+		fmt.Printf("Query[%s]: %v\n", key, values)
+	}
+	fmt.Println("=========================")
+}
+
+// SetInitialDeepLink stores the initial deep link for processing after startup
+func (a *App) SetInitialDeepLink(deepLinkURL string) {
+	a.initialDeepLink = deepLinkURL
 }

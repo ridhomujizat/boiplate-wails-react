@@ -31,6 +31,8 @@ export function GetTopApplications(arg1:app.DateRange,arg2:number):Promise<Array
 
 export function Greet(arg1:string):Promise<string>;
 
+export function HandleDeepLink(arg1:string):Promise<void>;
+
 export function HideWindow():Promise<void>;
 
 export function IsActivityTrackingActive():Promise<boolean>;
@@ -54,6 +56,8 @@ export function SaveActivitySettings(arg1:dto.ActivitySettingRequest):Promise<ap
 export function SaveAudioSettings(arg1:dto.AudioSettingRequest):Promise<app.SaveSettingsResponse>;
 
 export function SaveSettings(arg1:dto.SettingRequest):Promise<app.SaveSettingsResponse>;
+
+export function SetInitialDeepLink(arg1:string):Promise<void>;
 
 export function ShowWindow():Promise<void>;
 
