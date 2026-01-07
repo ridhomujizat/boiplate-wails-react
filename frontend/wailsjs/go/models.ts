@@ -68,22 +68,6 @@ export namespace app {
 	        this.endDate = source["endDate"];
 	    }
 	}
-	export class LoginResponse {
-	    success: boolean;
-	    message: string;
-	    token?: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new LoginResponse(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.success = source["success"];
-	        this.message = source["message"];
-	        this.token = source["token"];
-	    }
-	}
 	export class PermissionStatus {
 	    granted: boolean;
 	    message: string;

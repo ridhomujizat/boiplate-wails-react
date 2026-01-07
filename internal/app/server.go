@@ -10,7 +10,7 @@ import (
 // startHTTPServer initializes and starts the HTTP server for health checks
 func (a *App) startHTTPServer() {
 	config := &integration.Config{
-		Port: 8080,
+		Port: 55551,
 		Mode: "release",
 	}
 

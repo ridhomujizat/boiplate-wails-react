@@ -12,6 +12,7 @@ import (
 	"onx-screen-record/internal/pkg/tray"
 	"onx-screen-record/internal/repository"
 	activityService "onx-screen-record/internal/service/activity"
+	"onx-screen-record/internal/service/auth"
 	"onx-screen-record/internal/service/integration"
 	"onx-screen-record/internal/service/setting"
 
@@ -30,6 +31,7 @@ type App struct {
 	rp repository.IRepository
 
 	setting         setting.IService
+	auth            auth.IService
 	recorder        *recorder.RecorderManager
 	activityTracker *activityService.Tracker
 
@@ -43,6 +45,7 @@ func NewApp() *App {
 }
 
 func (a *App) Startup(ctx context.Context) {
+	logger.Setup()
 	a.ctx = ctx
 
 	a.path = pathHelper.NewPathHelper(a.AppName)
@@ -58,6 +61,15 @@ func (a *App) Startup(ctx context.Context) {
 	a.startHTTPServer()
 
 	a.setting = setting.NewService(a.ctx, a.rp)
+
+	// Initialize auth service with baseURL getter
+	a.auth = auth.NewService(a.ctx, func() (string, error) {
+		settings, err := a.setting.GetSettings()
+		if err != nil {
+			return "", err
+		}
+		return settings.BaseUrl, nil
+	})
 
 	outputDir, _ := a.path.GetStreamDataDir()
 	tempDir, _ := a.path.GetTempDataDir()
@@ -85,33 +97,14 @@ func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
-// LoginRequest represents login credentials
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
+// Login performs user authentication via API
+func (a *App) Login(email string, password string) interface{} {
 
-// LoginResponse represents login result
-type LoginResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Token   string `json:"token,omitempty"`
-}
-
-// Login simulates user authentication
-func (a *App) Login(email string, password string) LoginResponse {
-	// Simulated login - replace with actual authentication
-	if email != "" && password != "" {
-		return LoginResponse{
-			Success: true,
-			Message: "Login successful",
-			Token:   "mock-jwt-token",
-		}
+	response, err := a.auth.Login(email, password)
+	if err != nil {
+		logger.Error.Printf("Login error: %v", err)
 	}
-	return LoginResponse{
-		Success: false,
-		Message: "Invalid credentials",
-	}
+	return response
 }
 
 // Requirement represents a status requirement

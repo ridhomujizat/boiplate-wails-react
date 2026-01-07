@@ -39,7 +39,7 @@ export function IsActivityTrackingActive():Promise<boolean>;
 
 export function IsWindowVisible():Promise<boolean>;
 
-export function Login(arg1:string,arg2:string):Promise<app.LoginResponse>;
+export function Login(arg1:string,arg2:string):Promise<any>;
 
 export function MinimizeToTray():Promise<void>;
 

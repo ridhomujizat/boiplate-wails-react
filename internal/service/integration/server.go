@@ -13,7 +13,7 @@ import (
 // DefaultConfig returns default server configuration
 func DefaultConfig() *Config {
 	return &Config{
-		Port: 8080,
+		Port: 55551,
 		Mode: gin.ReleaseMode,
 	}
 }

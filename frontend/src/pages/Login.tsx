@@ -19,12 +19,12 @@ const Login: React.FC = () => {
     const onFinish = async (values: LoginForm) => {
         setLoading(true);
         try {
-            const success = await login(values.email, values.password);
-            if (success) {
-                message.success('Login successful!');
+            const result = await login(values.email, values.password);
+            if (result.success) {
+                message.success(result.message || 'Login successful!');
                 navigate('/');
             } else {
-                message.error('Invalid credentials');
+                message.error(result.message || 'Invalid credentials');
             }
         } catch {
             message.error('Login failed');

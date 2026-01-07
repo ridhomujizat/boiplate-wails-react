@@ -14,6 +14,10 @@ func JSONToString(payload any) (string, error) {
 	return jsonString, nil
 }
 
+func JSONByteToStruct[T any](data []byte, target *T) error {
+	return json.Unmarshal(data, target)
+}
+
 func JSONToStruct[I any](payload any) (result *I, err error) {
 	jsonBytes, err := json.Marshal(payload)
 	if err != nil {
