@@ -69,4 +69,6 @@ export function StopActivityTracking():Promise<boolean>;
 
 export function StopRecording():Promise<app.StopRecordingResponse>;
 
+export function TestDeepLinkAuth(arg1:string,arg2:string):Promise<any>;
+
 export function ToggleWindow():Promise<void>;

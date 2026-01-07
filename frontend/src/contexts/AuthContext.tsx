@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Login } from '../../wailsjs/go/app/App';
+import { EventsOn } from '../../wailsjs/runtime/runtime';
 
 interface Role {
     id: number;
@@ -50,6 +51,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
         }
+
+        const unsubscribe = EventsOn('deep-link-auth-success', (data: { message: string; user: User }) => {
+            console.log('Deep link auth success:', data);
+            if (data.user) {
+                setUser(data.user);
+                setToken('deep-link-token');
+                localStorage.setItem(TOKEN_KEY, 'deep-link-token');
+                localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+            }
+        });
+
+        return () => {
+            unsubscribe();
+        };
     }, []);
 
     const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {

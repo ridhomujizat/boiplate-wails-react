@@ -7,6 +7,13 @@ type LoginRequest struct {
 	DeviceID string `json:"device_id"`
 }
 
+// DeepLinkAuthRequest represents the request payload for deep link authentication
+type DeepLinkAuthRequest struct {
+	Email    string `json:"email"`
+	Token    string `json:"token"`
+	DeviceID string `json:"device_id"`
+}
+
 // Role represents user role
 type Role struct {
 	ID          int    `json:"id"`
@@ -33,4 +40,10 @@ type LoginData struct {
 type LoginResponse struct {
 	Data    LoginData `json:"data"`
 	Message string    `json:"message"`
+}
+
+// DeepLinkAuthResponse represents deep link auth result from API
+type DeepLinkAuthResponse struct {
+	Data    User   `json:"data"`
+	Message string `json:"message"`
 }

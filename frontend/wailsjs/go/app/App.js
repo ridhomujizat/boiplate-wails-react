@@ -134,6 +134,10 @@ export function StopRecording() {
   return window['go']['app']['App']['StopRecording']();
 }
 
+export function TestDeepLinkAuth(arg1, arg2) {
+  return window['go']['app']['App']['TestDeepLinkAuth'](arg1, arg2);
+}
+
 export function ToggleWindow() {
   return window['go']['app']['App']['ToggleWindow']();
 }

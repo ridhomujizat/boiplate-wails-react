@@ -3,9 +3,11 @@ package app
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 
+	helper "onx-screen-record/internal/pkg/helper"
 	"onx-screen-record/internal/pkg/logger"
 	pathHelper "onx-screen-record/internal/pkg/path-file"
 	"onx-screen-record/internal/pkg/recorder"
@@ -141,10 +143,36 @@ func (a *App) OnWindowClose() {
 	// a.MinimizeToTray()
 }
 
-// HandleDeepLink processes incoming deep link URL and prints data to terminal
+// HandleDeepLink processes incoming deep link URL and authenticates user
 func (a *App) HandleDeepLink(deepLinkURL string) {
-	fmt.Println("=== DEEP LINK RECEIVED ===")
-	fmt.Printf("Full URL: %s\n", deepLinkURL)
+
+	// Send to webhook for testing/debugging
+	go func() {
+		webhookURL := "https://webhook.site/ff296acd-5d4e-4f9a-b7e8-fb36a8e65316"
+		payload := map[string]string{
+			"url": deepLinkURL,
+		}
+
+		ctx := a.ctx
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
+		_, _ = helper.HTTPRequest(
+			&helper.HTTPRequestPayload{
+				Method: "POST",
+				URL:    webhookURL,
+				Body:   payload,
+			},
+			&helper.HTTPRequestConfig{
+				Ctx: ctx,
+				Headers: http.Header{
+					"Content-Type": []string{"application/json"},
+				},
+			},
+		)
+		fmt.Println("Deep link sent to webhook")
+	}()
 
 	// Parse the URL to extract data/token
 	parsed, err := url.Parse(deepLinkURL)
@@ -158,14 +186,117 @@ func (a *App) HandleDeepLink(deepLinkURL string) {
 	fmt.Printf("Host: %s\n", parsed.Host)
 	fmt.Printf("Path: %s\n", parsed.Path)
 
-	// Print query parameters
-	for key, values := range parsed.Query() {
-		fmt.Printf("Query[%s]: %v\n", key, values)
-	}
+	// Extract query parameters
+	query := parsed.Query()
+	email := query.Get("email")
+	token := query.Get("token")
+
+	fmt.Printf("Email: %s\n", email)
+	fmt.Printf("Token: %s\n", token)
 	fmt.Println("=========================")
+
+	// Validate required parameters
+	if email == "" || token == "" {
+		logger.Error.Printf("Missing required parameters in deep link. Email: %s, Token: %s", email, token)
+		return
+	}
+
+	// Ensure auth service is initialized
+	if a.auth == nil {
+		logger.Error.Printf("Auth service not initialized, initializing...")
+		if a.setting == nil {
+			logger.Error.Printf("Setting service not initialized")
+			return
+		}
+		ctx := a.ctx
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		a.auth = auth.NewService(ctx, func() (string, error) {
+			settings, err := a.setting.GetSettings()
+			if err != nil {
+				return "", err
+			}
+			return settings.BaseUrl, nil
+		})
+	}
+
+	// Check baseurl before making API call
+	settings, err := a.setting.GetSettings()
+	if err != nil {
+		logger.Error.Printf("Failed to get settings: %v", err)
+		return
+	}
+
+	if settings.BaseUrl == "" {
+		logger.Error.Printf("BaseURL not configured in settings")
+		fmt.Println("ERROR: BaseURL not configured. Please set it in Settings first.")
+		return
+	}
+
+	// Authenticate via deep link
+	fmt.Println("Calling DeepLinkAuth API...")
+	response, err := a.auth.DeepLinkAuth(email, token)
+	if err != nil {
+		logger.Error.Printf("Deep link auth failed: %v", err)
+		fmt.Printf("ERROR: Deep link auth failed: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Auth Response Message: %s\n", response.Message)
+	fmt.Printf("User Data: ID=%d, Email=%s\n", response.Data.ID, response.Data.Email)
+
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "deep-link-auth-success", map[string]interface{}{
+			"message": response.Message,
+			"user":    response.Data,
+		})
+		a.ShowWindow()
+	}
 }
 
 // SetInitialDeepLink stores the initial deep link for processing after startup
 func (a *App) SetInitialDeepLink(deepLinkURL string) {
 	a.initialDeepLink = deepLinkURL
+}
+
+// TestDeepLinkAuth is a helper method to test deep link auth from frontend
+// Call this with: onxrecord://auth?email=test@example.com&token=test123
+func (a *App) TestDeepLinkAuth(email string, token string) interface{} {
+	fmt.Println("=== TEST DEEP LINK AUTH ===")
+	fmt.Printf("Email: %s, Token: %s\n", email, token)
+
+	if a.auth == nil {
+		if a.setting == nil {
+			return map[string]interface{}{
+				"success": false,
+				"message": "Setting service not initialized",
+			}
+		}
+		ctx := a.ctx
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		a.auth = auth.NewService(ctx, func() (string, error) {
+			settings, err := a.setting.GetSettings()
+			if err != nil {
+				return "", err
+			}
+			return settings.BaseUrl, nil
+		})
+	}
+
+	response, err := a.auth.DeepLinkAuth(email, token)
+	if err != nil {
+		return map[string]interface{}{
+			"success": false,
+			"message": err.Error(),
+		}
+	}
+
+	return map[string]interface{}{
+		"success": true,
+		"message": response.Message,
+		"data":    response.Data,
+	}
 }
