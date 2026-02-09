@@ -47,3 +47,15 @@ type DeepLinkAuthResponse struct {
 	Data    User   `json:"data"`
 	Message string `json:"message"`
 }
+
+// LogoutRequest represents the request payload for logout
+type LogoutRequest struct {
+	Token    string `json:"token"`
+	DeviceID string `json:"device_id"`
+}
+
+// LogoutResponse represents logout result from API
+type LogoutResponse struct {
+	Message string `json:"message"`
+	Success bool   `json:"success"`
+}

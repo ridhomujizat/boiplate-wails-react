@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Login } from '../../wailsjs/go/app/App';
+import { Login, Logout } from '../../wailsjs/go/app/App';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
 
 interface Role {
@@ -30,7 +30,7 @@ interface AuthContextType {
     user: User | null;
     token: string | null;
     login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
-    logout: () => void;
+    logout: () => Promise<void>;
     isAuthenticated: boolean;
 }
 
@@ -89,11 +89,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const logout = () => {
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
+    const logout = async () => {
+        try {
+            // Call backend logout with token
+            if (token) {
+                await Logout(token);
+                console.log('Backend logout successful');
+            }
+        } catch (error) {
+            console.error('Backend logout error:', error);
+        } finally {
+            // Clear frontend state regardless of backend result
+            setUser(null);
+            setToken(null);
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(USER_KEY);
+        }
     };
 
     return (

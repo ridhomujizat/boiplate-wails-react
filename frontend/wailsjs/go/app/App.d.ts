@@ -41,6 +41,8 @@ export function IsWindowVisible():Promise<boolean>;
 
 export function Login(arg1:string,arg2:string):Promise<any>;
 
+export function Logout(arg1:string):Promise<any>;
+
 export function MinimizeToTray():Promise<void>;
 
 export function OnWindowClose():Promise<void>;

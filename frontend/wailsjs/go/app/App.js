@@ -78,6 +78,10 @@ export function Login(arg1, arg2) {
   return window['go']['app']['App']['Login'](arg1, arg2);
 }
 
+export function Logout(arg1) {
+  return window['go']['app']['App']['Logout'](arg1);
+}
+
 export function MinimizeToTray() {
   return window['go']['app']['App']['MinimizeToTray']();
 }

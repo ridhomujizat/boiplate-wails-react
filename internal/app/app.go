@@ -107,6 +107,19 @@ func (a *App) Login(email string, password string) interface{} {
 	return response
 }
 
+// Logout performs user logout
+func (a *App) Logout(token string) interface{} {
+	response, err := a.auth.Logout(token)
+	if err != nil {
+		logger.Error.Printf("Logout error: %v", err)
+		return map[string]interface{}{
+			"success": false,
+			"message": "Logout failed",
+		}
+	}
+	return response
+}
+
 // Requirement represents a status requirement
 type Requirement struct {
 	ID       string `json:"id"`
