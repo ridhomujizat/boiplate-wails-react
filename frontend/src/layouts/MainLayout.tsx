@@ -67,9 +67,9 @@ const MainLayout: React.FC = () => {
                 style={{ background: '#4c1d95' }}
             >
                 <div className="h-16 flex items-center justify-center">
-                    <span className="text-white text-lg font-bold">
-                        {collapsed ? 'ONX' : 'ONX Screen'}
-                    </span>
+                    {/* <span className="text-white text-lg font-bold">
+                        {collapsed ? 'ONX' : 'ONX'}
+                    </span> */}
                 </div>
                 <Menu
                     theme="dark"

@@ -3,11 +3,9 @@ package app
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"net/url"
 	"time"
 
-	helper "onx-screen-record/internal/pkg/helper"
 	"onx-screen-record/internal/pkg/logger"
 	pathHelper "onx-screen-record/internal/pkg/path-file"
 	"onx-screen-record/internal/pkg/recorder"
@@ -145,35 +143,9 @@ func (a *App) OnWindowClose() {
 
 // HandleDeepLink processes incoming deep link URL and authenticates user
 func (a *App) HandleDeepLink(deepLinkURL string) {
-
-	// Send to webhook for testing/debugging
-	go func() {
-		webhookURL := "https://webhook.site/ff296acd-5d4e-4f9a-b7e8-fb36a8e65316"
-		payload := map[string]string{
-			"url": deepLinkURL,
-		}
-
-		ctx := a.ctx
-		if ctx == nil {
-			ctx = context.Background()
-		}
-
-		_, _ = helper.HTTPRequest(
-			&helper.HTTPRequestPayload{
-				Method: "POST",
-				URL:    webhookURL,
-				Body:   payload,
-			},
-			&helper.HTTPRequestConfig{
-				Ctx: ctx,
-				Headers: http.Header{
-					"Content-Type": []string{"application/json"},
-				},
-			},
-		)
-		fmt.Println("Deep link sent to webhook")
-	}()
-
+	fmt.Println("=== TEST DEEP LINK AUTH ===")
+	fmt.Println("Deep Link URL:", deepLinkURL)
+	fmt.Println("=========================")
 	// Parse the URL to extract data/token
 	parsed, err := url.Parse(deepLinkURL)
 	if err != nil {
@@ -182,18 +154,10 @@ func (a *App) HandleDeepLink(deepLinkURL string) {
 		return
 	}
 
-	fmt.Printf("Scheme: %s\n", parsed.Scheme)
-	fmt.Printf("Host: %s\n", parsed.Host)
-	fmt.Printf("Path: %s\n", parsed.Path)
-
 	// Extract query parameters
 	query := parsed.Query()
 	email := query.Get("email")
 	token := query.Get("token")
-
-	fmt.Printf("Email: %s\n", email)
-	fmt.Printf("Token: %s\n", token)
-	fmt.Println("=========================")
 
 	// Validate required parameters
 	if email == "" || token == "" {

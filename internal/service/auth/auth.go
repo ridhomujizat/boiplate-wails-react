@@ -139,11 +139,6 @@ func (s *Service) DeepLinkAuth(email string, token string) (dto.DeepLinkAuthResp
 		}, nil
 	}
 
-	fmt.Println("Base URL:", baseURL)
-	fmt.Println("Device ID:", deviceID)
-	fmt.Println("Email:", email)
-	fmt.Println("Token:", token)
-
 	// Prepare deep link auth request
 	authReq := dto.DeepLinkAuthRequest{
 		Email:    email,
