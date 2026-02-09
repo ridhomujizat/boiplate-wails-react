@@ -43,3 +43,15 @@ type ActivitySettingResponse struct {
 	PollingInterval int `json:"pollingInterval"` // in seconds
 	AFKThreshold    int `json:"afkThreshold"`    // in seconds
 }
+
+// RecordingSettingRequest represents the request body for saving recording settings
+type RecordingSettingRequest struct {
+	MaxRecordingTimeEnabled bool `json:"maxRecordingTimeEnabled"`
+	MaxRecordingTimeSeconds int  `json:"maxRecordingTimeSeconds"` // in seconds
+}
+
+// RecordingSettingResponse represents the response body for getting recording settings
+type RecordingSettingResponse struct {
+	MaxRecordingTimeEnabled bool `json:"maxRecordingTimeEnabled"`
+	MaxRecordingTimeSeconds int  `json:"maxRecordingTimeSeconds"` // in seconds
+}

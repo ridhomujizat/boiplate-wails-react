@@ -21,6 +21,8 @@ export function GetCaptureDevices():Promise<Array<app.AudioDevice>>;
 
 export function GetDashboardStats(arg1:app.DateRange):Promise<app.DashboardStats>;
 
+export function GetRecordingSettings():Promise<dto.RecordingSettingResponse>;
+
 export function GetRecordingStatus():Promise<app.RecordingStatus>;
 
 export function GetRequirements():Promise<Array<app.Requirement>>;
@@ -56,6 +58,8 @@ export function RequestScreenPermission():Promise<boolean>;
 export function SaveActivitySettings(arg1:dto.ActivitySettingRequest):Promise<app.SaveSettingsResponse>;
 
 export function SaveAudioSettings(arg1:dto.AudioSettingRequest):Promise<app.SaveSettingsResponse>;
+
+export function SaveRecordingSettings(arg1:dto.RecordingSettingRequest):Promise<app.SaveSettingsResponse>;
 
 export function SaveSettings(arg1:dto.SettingRequest):Promise<app.SaveSettingsResponse>;
 

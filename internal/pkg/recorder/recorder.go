@@ -1,6 +1,7 @@
 package recorder
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -26,10 +27,12 @@ type RecordingStatus struct {
 
 // RecordingConfig holds recording configuration
 type RecordingConfig struct {
-	MicrophoneID       string
-	SystemAudioEnabled bool
-	OutputDir          string
-	TempDir            string
+	MicrophoneID            string
+	SystemAudioEnabled      bool
+	OutputDir               string
+	TempDir                 string
+	MaxRecordingTimeEnabled bool
+	MaxRecordingTimeSeconds int
 }
 
 // RecorderManager manages screen and audio recording
@@ -38,6 +41,7 @@ type RecorderManager struct {
 	status              RecordingStatus
 	config              RecordingConfig
 	stopChan            chan struct{}
+	autoStopTimer       *time.Timer
 	screenCmd           interface{} // *exec.Cmd, platform specific
 	audioRecorder       *AudioRecorder
 	systemAudioRecorder *SystemAudioRecorder
@@ -74,4 +78,26 @@ func (r *RecorderManager) UpdateConfig(config RecordingConfig) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.config = config
+}
+
+// setupAutoStopTimer sets up a timer to automatically stop recording after the configured duration
+func (r *RecorderManager) setupAutoStopTimer(onAutoStop func()) {
+	if !r.config.MaxRecordingTimeEnabled || r.config.MaxRecordingTimeSeconds <= 0 {
+		return
+	}
+	duration := time.Duration(r.config.MaxRecordingTimeSeconds) * time.Second
+	r.autoStopTimer = time.AfterFunc(duration, func() {
+		if onAutoStop != nil {
+			onAutoStop()
+		}
+	})
+}
+
+// cancelAutoStopTimer stops and clears the auto-stop timer
+func (r *RecorderManager) cancelAutoStopTimer() {
+	fmt.Println("Cancelling auto-stop timer")
+	if r.autoStopTimer != nil {
+		r.autoStopTimer.Stop()
+		r.autoStopTimer = nil
+	}
 }

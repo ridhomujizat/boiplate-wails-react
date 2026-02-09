@@ -14,6 +14,8 @@ const (
 	KeySystemAudio             = "systemaudio"
 	KeyActivityPollingInterval = "activity_polling_interval"
 	KeyActivityAFKThreshold    = "activity_afk_threshold"
+	KeyMaxRecordingTimeEnabled = "max_recording_time_enabled"
+	KeyMaxRecordingTimeSeconds = "max_recording_time_seconds"
 )
 
 // GetSettings retrieves all settings from the database
@@ -156,5 +158,70 @@ func (s *Service) SaveActivitySettings(req dto.ActivitySettingRequest) (*dto.Sav
 	return &dto.SaveSettingResponse{
 		Success: true,
 		Message: "Activity settings saved successfully",
+	}, nil
+}
+
+func (s *Service) GetRecordingSettings() (*dto.RecordingSettingResponse, error) {
+	settingsMap, err := s.rp.Setting.GetAsMap()
+	if err != nil {
+		return nil, err
+	}
+
+	enabled := false
+	if v := settingsMap[KeyMaxRecordingTimeEnabled]; v == "true" {
+		enabled = true
+	}
+
+	seconds := 3600 // default 1 hour
+	if v := settingsMap[KeyMaxRecordingTimeSeconds]; v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil && parsed >= 30 && parsed <= 36000 {
+			seconds = parsed
+		}
+	}
+
+	return &dto.RecordingSettingResponse{
+		MaxRecordingTimeEnabled: enabled,
+		MaxRecordingTimeSeconds: seconds,
+	}, nil
+}
+
+func (s *Service) SaveRecordingSettings(req dto.RecordingSettingRequest) (*dto.SaveSettingResponse, error) {
+	// Validate seconds range
+	if req.MaxRecordingTimeSeconds < 30 {
+		return &dto.SaveSettingResponse{
+			Success: false,
+			Message: "Maximum recording time must be at least 30 seconds",
+		}, nil
+	}
+	if req.MaxRecordingTimeSeconds > 36000 {
+		return &dto.SaveSettingResponse{
+			Success: false,
+			Message: "Maximum recording time cannot exceed 36000 seconds (10 hours)",
+		}, nil
+	}
+
+	// Save enabled status
+	enabledValue := "false"
+	if req.MaxRecordingTimeEnabled {
+		enabledValue = "true"
+	}
+	if err := s.rp.Setting.Set(KeyMaxRecordingTimeEnabled, enabledValue, "bool"); err != nil {
+		return &dto.SaveSettingResponse{
+			Success: false,
+			Message: "Failed to save max recording time enabled: " + err.Error(),
+		}, err
+	}
+
+	// Save seconds
+	if err := s.rp.Setting.Set(KeyMaxRecordingTimeSeconds, strconv.Itoa(req.MaxRecordingTimeSeconds), "int"); err != nil {
+		return &dto.SaveSettingResponse{
+			Success: false,
+			Message: "Failed to save max recording time seconds: " + err.Error(),
+		}, err
+	}
+
+	return &dto.SaveSettingResponse{
+		Success: true,
+		Message: "Recording settings saved successfully",
 	}, nil
 }

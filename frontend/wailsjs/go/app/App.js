@@ -38,6 +38,10 @@ export function GetDashboardStats(arg1) {
   return window['go']['app']['App']['GetDashboardStats'](arg1);
 }
 
+export function GetRecordingSettings() {
+  return window['go']['app']['App']['GetRecordingSettings']();
+}
+
 export function GetRecordingStatus() {
   return window['go']['app']['App']['GetRecordingStatus']();
 }
@@ -108,6 +112,10 @@ export function SaveActivitySettings(arg1) {
 
 export function SaveAudioSettings(arg1) {
   return window['go']['app']['App']['SaveAudioSettings'](arg1);
+}
+
+export function SaveRecordingSettings(arg1) {
+  return window['go']['app']['App']['SaveRecordingSettings'](arg1);
 }
 
 export function SaveSettings(arg1) {

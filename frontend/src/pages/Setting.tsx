@@ -13,7 +13,8 @@ import {
     SoundOutlined,
     CheckCircleOutlined,
     ExclamationCircleOutlined,
-    FieldTimeOutlined
+    FieldTimeOutlined,
+    VideoCameraOutlined
 } from '@ant-design/icons';
 import {
     GetSettings,
@@ -26,7 +27,9 @@ import {
     GetAudioSettings,
     SaveAudioSettings,
     GetActivitySettings,
-    SaveActivitySettings
+    SaveActivitySettings,
+    GetRecordingSettings,
+    SaveRecordingSettings
 } from '../../wailsjs/go/app/App';
 import { app } from '../../wailsjs/go/models';
 
@@ -49,6 +52,11 @@ interface ActivityFormValues {
     afkThreshold: number;
 }
 
+interface RecordingFormValues {
+    maxRecordingTimeEnabled: boolean;
+    maxRecordingTimeSeconds: number;
+}
+
 interface PermissionState {
     screen: { granted: boolean; message: string };
     accessibility: { granted: boolean; message: string };
@@ -58,10 +66,12 @@ const Setting: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [audioLoading, setAudioLoading] = useState(false);
     const [activityLoading, setActivityLoading] = useState(false);
+    const [recordingLoading, setRecordingLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     const [form] = Form.useForm<SettingFormValues>();
     const [audioForm] = Form.useForm<AudioFormValues>();
     const [activityForm] = Form.useForm<ActivityFormValues>();
+    const [recordingForm] = Form.useForm<RecordingFormValues>();
 
     // Permission states
     const [permissions, setPermissions] = useState<PermissionState>({
@@ -78,6 +88,7 @@ const Setting: React.FC = () => {
         checkPermissions();
         loadAudioDevices();
         loadActivitySettings();
+        loadRecordingSettings();
     }, []);
 
     const loadSettings = async () => {
@@ -134,6 +145,18 @@ const Setting: React.FC = () => {
             });
         } catch (error) {
             console.error('Failed to load activity settings:', error);
+        }
+    };
+
+    const loadRecordingSettings = async () => {
+        try {
+            const settings = await GetRecordingSettings();
+            recordingForm.setFieldsValue({
+                maxRecordingTimeEnabled: settings.maxRecordingTimeEnabled || false,
+                maxRecordingTimeSeconds: settings.maxRecordingTimeSeconds || 3600
+            });
+        } catch (error) {
+            console.error('Failed to load recording settings:', error);
         }
     };
 
@@ -198,6 +221,30 @@ const Setting: React.FC = () => {
             message.error('Failed to save activity settings');
         } finally {
             setActivityLoading(false);
+        }
+    };
+
+    const handleRecordingSave = async (values: RecordingFormValues) => {
+        setRecordingLoading(true);
+        try {
+            // Use default value when disabled to avoid validation issues
+            const seconds = values.maxRecordingTimeEnabled ? values.maxRecordingTimeSeconds : 3600;
+
+            const result = await SaveRecordingSettings({
+                maxRecordingTimeEnabled: values.maxRecordingTimeEnabled,
+                maxRecordingTimeSeconds: seconds
+            });
+
+            if (result.success) {
+                message.success(result.message || 'Recording settings saved successfully!');
+            } else {
+                message.error(result.message || 'Failed to save recording settings');
+            }
+        } catch (error) {
+            console.error('Failed to save recording settings:', error);
+            message.error('Failed to save recording settings');
+        } finally {
+            setRecordingLoading(false);
         }
     };
 
@@ -387,6 +434,91 @@ const Setting: React.FC = () => {
                             }}
                         >
                             Save Audio Settings
+                        </Button>
+                    </Form.Item>
+                </Form>
+            </Card>
+
+            {/* Recording Settings Section */}
+            <Card
+                title={
+                    <Space>
+                        <VideoCameraOutlined style={{ color: '#7c3aed' }} />
+                        <Text strong>Recording Settings</Text>
+                    </Space>
+                }
+                style={{ marginBottom: 24 }}
+            >
+                <Form
+                    form={recordingForm}
+                    layout="vertical"
+                    onFinish={handleRecordingSave}
+                    initialValues={{
+                        maxRecordingTimeEnabled: false,
+                        maxRecordingTimeSeconds: 3600
+                    }}
+                >
+                    <Form.Item
+                        label={
+                            <Space>
+                                <FieldTimeOutlined style={{ color: '#7c3aed' }} />
+                                <span>Maximum Recording Time</span>
+                            </Space>
+                        }
+                        name="maxRecordingTimeEnabled"
+                        valuePropName="checked"
+                        extra="Automatically stop recording after the specified duration"
+                    >
+                        <Switch
+                            checkedChildren="ON"
+                            unCheckedChildren="OFF"
+                        />
+                    </Form.Item>
+
+                    <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.maxRecordingTimeEnabled !== currentValues.maxRecordingTimeEnabled}>
+                        {({ getFieldValue }) =>
+                            getFieldValue('maxRecordingTimeEnabled') ? (
+                                <Form.Item
+                                    label={
+                                        <Space>
+                                            <FieldTimeOutlined style={{ color: '#7c3aed' }} />
+                                            <span>Duration (seconds)</span>
+                                        </Space>
+                                    }
+                                    name="maxRecordingTimeSeconds"
+                                    extra="Minimum: 30 seconds, Maximum: 36000 seconds (10 hours)"
+                                    rules={[
+                                        { required: true, message: 'Please enter duration' },
+                                        { type: 'number', min: 30, message: 'Minimum is 30 seconds' },
+                                        { type: 'number', max: 36000, message: 'Maximum is 36000 seconds (10 hours)' }
+                                    ]}
+                                >
+                                    <InputNumber
+                                        min={30}
+                                        max={36000}
+                                        size="large"
+                                        style={{ width: '100%' }}
+                                        placeholder="3600"
+                                        addonAfter="seconds"
+                                    />
+                                </Form.Item>
+                            ) : null
+                        }
+                    </Form.Item>
+
+                    <Form.Item style={{ marginTop: 16, marginBottom: 0 }}>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            icon={<SaveOutlined />}
+                            loading={recordingLoading}
+                            size="large"
+                            style={{
+                                backgroundColor: '#7c3aed',
+                                borderColor: '#7c3aed'
+                            }}
+                        >
+                            Save Recording Settings
                         </Button>
                     </Form.Item>
                 </Form>

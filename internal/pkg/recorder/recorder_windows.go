@@ -105,6 +105,12 @@ func (r *RecorderManager) StartRecording() error {
 	}
 	r.stopChan = make(chan struct{})
 
+	// Setup auto-stop timer with callback
+	r.setupAutoStopTimer(func() {
+		// Timer expired, stop recording
+		r.StopRecording()
+	})
+
 	return nil
 }
 
@@ -117,6 +123,7 @@ func (r *RecorderManager) StopRecording() (string, error) {
 		return "", fmt.Errorf("no recording in progress")
 	}
 
+	r.cancelAutoStopTimer()
 	r.status.State = StateProcessing
 
 	// Stop screen recording gracefully by sending 'q' to FFmpeg

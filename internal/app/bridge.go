@@ -175,16 +175,21 @@ func (a *App) StartRecording() StartRecordingResponse {
 	// Get audio settings to configure microphone
 	audioSettings, _ := a.setting.GetAudioSettings()
 
+	// Get recording settings for max time
+	recordingSettings, _ := a.setting.GetRecordingSettings()
+
 	// Get paths for recording
 	outputDir, _ := a.path.GetStreamDataDir()
 	tempDir, _ := a.path.GetTempDataDir()
 
 	// Update recorder config with current settings
 	a.recorder.UpdateConfig(recorder.RecordingConfig{
-		MicrophoneID:       audioSettings.MicrophoneID,
-		SystemAudioEnabled: audioSettings.SystemAudioEnabled,
-		OutputDir:          outputDir,
-		TempDir:            tempDir,
+		MicrophoneID:            audioSettings.MicrophoneID,
+		SystemAudioEnabled:      audioSettings.SystemAudioEnabled,
+		OutputDir:               outputDir,
+		TempDir:                 tempDir,
+		MaxRecordingTimeEnabled: recordingSettings.MaxRecordingTimeEnabled,
+		MaxRecordingTimeSeconds: recordingSettings.MaxRecordingTimeSeconds,
 	})
 
 	if err := a.recorder.StartRecording(); err != nil {
@@ -251,6 +256,31 @@ func (a *App) SaveActivitySettings(req dtoSetting.ActivitySettingRequest) SaveSe
 		a.activityTracker.UpdateConfig(req.PollingInterval, req.AFKThreshold)
 	}
 
+	return SaveSettingsResponse{
+		Success: result.Success,
+		Message: result.Message,
+	}
+}
+
+func (a *App) GetRecordingSettings() dtoSetting.RecordingSettingResponse {
+	result, err := a.setting.GetRecordingSettings()
+	if err != nil {
+		return dtoSetting.RecordingSettingResponse{
+			MaxRecordingTimeEnabled: false,
+			MaxRecordingTimeSeconds: 3600,
+		}
+	}
+	return *result
+}
+
+func (a *App) SaveRecordingSettings(req dtoSetting.RecordingSettingRequest) SaveSettingsResponse {
+	result, err := a.setting.SaveRecordingSettings(req)
+	if err != nil {
+		return SaveSettingsResponse{
+			Success: false,
+			Message: err.Error(),
+		}
+	}
 	return SaveSettingsResponse{
 		Success: result.Success,
 		Message: result.Message,

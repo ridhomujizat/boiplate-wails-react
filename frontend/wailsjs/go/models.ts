@@ -265,6 +265,34 @@ export namespace dto {
 	        this.systemAudioEnabled = source["systemAudioEnabled"];
 	    }
 	}
+	export class RecordingSettingRequest {
+	    maxRecordingTimeEnabled: boolean;
+	    maxRecordingTimeSeconds: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RecordingSettingRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.maxRecordingTimeEnabled = source["maxRecordingTimeEnabled"];
+	        this.maxRecordingTimeSeconds = source["maxRecordingTimeSeconds"];
+	    }
+	}
+	export class RecordingSettingResponse {
+	    maxRecordingTimeEnabled: boolean;
+	    maxRecordingTimeSeconds: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RecordingSettingResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.maxRecordingTimeEnabled = source["maxRecordingTimeEnabled"];
+	        this.maxRecordingTimeSeconds = source["maxRecordingTimeSeconds"];
+	    }
+	}
 	export class SettingRequest {
 	    tenantCode: string;
 	    baseUrl: string;

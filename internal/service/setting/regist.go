@@ -17,6 +17,8 @@ type IService interface {
 	SaveAudioSettings(req dto.AudioSettingRequest) (*dto.SaveSettingResponse, error)
 	GetActivitySettings() (*dto.ActivitySettingResponse, error)
 	SaveActivitySettings(req dto.ActivitySettingRequest) (*dto.SaveSettingResponse, error)
+	GetRecordingSettings() (*dto.RecordingSettingResponse, error)
+	SaveRecordingSettings(req dto.RecordingSettingRequest) (*dto.SaveSettingResponse, error)
 }
 
 func NewService(ctx context.Context, rp repository.IRepository) IService {
