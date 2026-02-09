@@ -3,6 +3,7 @@ module onx-screen-record
 go 1.24.0
 
 require (
+	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/gen2brain/malgo v0.11.24
 	github.com/getlantern/systray v1.2.2
 	github.com/gin-gonic/gin v1.11.0

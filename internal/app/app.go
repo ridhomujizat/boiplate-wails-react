@@ -84,7 +84,7 @@ func (a *App) Startup(ctx context.Context) {
 		AFKThreshold:    time.Duration(activitySettings.AFKThreshold) * time.Second,
 		Enabled:         true,
 	})
-	a.activityTracker.Start()
+	// a.activityTracker.Start()
 
 	// Process initial deep link if present
 	if a.initialDeepLink != "" {
