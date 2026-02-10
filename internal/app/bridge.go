@@ -26,6 +26,12 @@ type AudioDevice struct {
 	Type string `json:"type"`
 }
 
+// MQTTStatus represents the current MQTT connection status
+type MQTTStatus struct {
+	Connected bool   `json:"connected"`
+	Message   string `json:"message"`
+}
+
 // GetSettings retrieves all settings from the database
 func (a *App) GetSettings() dtoSetting.SettingResponse {
 
@@ -229,6 +235,27 @@ func (a *App) GetRecordingStatus() RecordingStatus {
 		Duration: status.Duration,
 		FilePath: status.FilePath,
 		Error:    status.Error,
+	}
+}
+
+// GetMQTTStatus returns the current MQTT connection status
+func (a *App) GetMQTTStatus() MQTTStatus {
+	if a.mqtt == nil {
+		return MQTTStatus{
+			Connected: false,
+			Message:   "MQTT service not initialized",
+		}
+	}
+
+	connected := a.mqtt.IsConnected()
+	message := "Not connected"
+	if connected {
+		message = "Connected to MQTT broker"
+	}
+
+	return MQTTStatus{
+		Connected: connected,
+		Message:   message,
 	}
 }
 

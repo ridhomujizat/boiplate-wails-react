@@ -68,6 +68,20 @@ export namespace app {
 	        this.endDate = source["endDate"];
 	    }
 	}
+	export class MQTTStatus {
+	    connected: boolean;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MQTTStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.connected = source["connected"];
+	        this.message = source["message"];
+	    }
+	}
 	export class PermissionStatus {
 	    granted: boolean;
 	    message: string;
@@ -98,24 +112,6 @@ export namespace app {
 	        this.duration = source["duration"];
 	        this.filePath = source["filePath"];
 	        this.error = source["error"];
-	    }
-	}
-	export class Requirement {
-	    id: string;
-	    title: string;
-	    status: string;
-	    progress: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new Requirement(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.title = source["title"];
-	        this.status = source["status"];
-	        this.progress = source["progress"];
 	    }
 	}
 	export class SaveSettingsResponse {

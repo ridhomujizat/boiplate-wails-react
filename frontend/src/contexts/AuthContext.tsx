@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Login, Logout } from '../../wailsjs/go/app/App';
+import { Login, Logout, ConnectMQTT } from '../../wailsjs/go/app/App';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
 
 interface Role {
@@ -50,6 +50,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (storedToken && storedUser) {
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
+
+            // Reconnect MQTT if user session exists
+            console.log('Existing session detected, connecting MQTT...');
+            ConnectMQTT()
+                .then((response) => {
+                    console.log('MQTT connection result:', response);
+                })
+                .catch((error) => {
+                    console.error('Failed to connect MQTT on app reload:', error);
+                });
         }
 
         const unsubscribe = EventsOn('deep-link-auth-success', (data: { message: string; user: User }) => {
@@ -59,6 +69,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setToken('deep-link-token');
                 localStorage.setItem(TOKEN_KEY, 'deep-link-token');
                 localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+
+                // Connect MQTT after deep link auth
+                ConnectMQTT()
+                    .then((response) => {
+                        console.log('MQTT connected after deep link auth:', response);
+                    })
+                    .catch((error) => {
+                        console.error('Failed to connect MQTT after deep link:', error);
+                    });
             }
         });
 

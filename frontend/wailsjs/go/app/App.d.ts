@@ -7,6 +7,8 @@ export function CheckAccessibilityPermission():Promise<app.PermissionStatus>;
 
 export function CheckScreenPermission():Promise<app.PermissionStatus>;
 
+export function ConnectMQTT():Promise<Record<string, any>>;
+
 export function GetActivitySettings():Promise<dto.ActivitySettingResponse>;
 
 export function GetActivitySummary(arg1:app.DateRange):Promise<Array<app.ActivitySummary>>;
@@ -21,11 +23,11 @@ export function GetCaptureDevices():Promise<Array<app.AudioDevice>>;
 
 export function GetDashboardStats(arg1:app.DateRange):Promise<app.DashboardStats>;
 
+export function GetMQTTStatus():Promise<app.MQTTStatus>;
+
 export function GetRecordingSettings():Promise<dto.RecordingSettingResponse>;
 
 export function GetRecordingStatus():Promise<app.RecordingStatus>;
-
-export function GetRequirements():Promise<Array<app.Requirement>>;
 
 export function GetSettings():Promise<dto.SettingResponse>;
 

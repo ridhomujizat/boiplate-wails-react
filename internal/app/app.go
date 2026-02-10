@@ -125,10 +125,35 @@ func (a *App) Login(email string, password string) interface{} {
 
 // connectMQTT establishes MQTT connection with message handler
 func (a *App) connectMQTT() {
+	// Check if already connected
+	if a.mqtt != nil && a.mqtt.IsConnected() {
+		logger.Info.Printf("[MQTT] Already connected, skipping reconnection")
+		return
+	}
+
+	// Check settings before attempting connection
+	settings, err := a.setting.GetSettings()
+	if err != nil {
+		logger.Error.Printf("[MQTT] Cannot get settings: %v", err)
+		return
+	}
+
+	// Log settings for debugging (without sensitive data)
+	logger.Info.Printf("[MQTT] Attempting connection with Broker: %s, Tenant: %s",
+		settings.MqttBroker, settings.TenantCode)
+
+	if settings.MqttBroker == "" {
+		logger.Error.Printf("[MQTT] ✗ MQTT Broker URL is not configured in settings")
+		return
+	}
+	if settings.TenantCode == "" {
+		logger.Error.Printf("[MQTT] ✗ Tenant Code is not configured in settings")
+		return
+	}
+
 	// Define message handler for incoming MQTT messages
 	messageHandler := func(client mqtt.Client, msg mqtt.Message) {
-		logger.Info.Printf("MQTT message received - Topic: %s, Payload: %s",
-			msg.Topic(), string(msg.Payload()))
+		logger.Info.Printf("Pesan diterima dari topic %s:\n%+v\n", msg.Topic(), msg.Payload())
 
 		// Emit event to frontend for real-time message handling
 		if a.ctx != nil {
@@ -141,11 +166,37 @@ func (a *App) connectMQTT() {
 
 	// Attempt connection (errors logged but don't prevent app usage)
 	if err := a.mqtt.Connect(messageHandler); err != nil {
-		logger.Error.Printf("Failed to connect to MQTT: %v", err)
+		logger.Error.Printf("[MQTT] ✗ Failed to connect: %v", err)
 		return
 	}
 
-	logger.Info.Printf("MQTT connection initiated")
+	logger.Info.Printf("[MQTT] Connection initiated successfully")
+}
+
+// ConnectMQTT is an exported method to connect MQTT (callable from frontend)
+func (a *App) ConnectMQTT() map[string]interface{} {
+	if a.mqtt == nil {
+		return map[string]interface{}{
+			"success": false,
+			"message": "MQTT service not initialized",
+		}
+	}
+
+	// Check if already connected
+	if a.mqtt.IsConnected() {
+		return map[string]interface{}{
+			"success": true,
+			"message": "Already connected to MQTT",
+		}
+	}
+
+	// Connect in background
+	go a.connectMQTT()
+
+	return map[string]interface{}{
+		"success": true,
+		"message": "MQTT connection initiated",
+	}
 }
 
 // Logout performs user logout
@@ -169,24 +220,6 @@ func (a *App) Logout(token string) interface{} {
 }
 
 // Requirement represents a status requirement
-type Requirement struct {
-	ID       string `json:"id"`
-	Title    string `json:"title"`
-	Status   string `json:"status"`
-	Progress int    `json:"progress"`
-}
-
-// GetRequirements returns the list of requirements
-func (a *App) GetRequirements() []Requirement {
-	return []Requirement{
-		{ID: "1", Title: "User Authentication", Status: "completed", Progress: 100},
-		{ID: "2", Title: "Dashboard Layout", Status: "completed", Progress: 100},
-		{ID: "3", Title: "API Integration", Status: "pending", Progress: 45},
-		{ID: "4", Title: "Data Validation", Status: "warning", Progress: 20},
-		{ID: "5", Title: "Testing Coverage", Status: "pending", Progress: 60},
-	}
-}
-
 func (a *App) Quit() {
 	// Disconnect MQTT if connected
 	if a.mqtt != nil && a.mqtt.IsConnected() {

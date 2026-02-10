@@ -10,6 +10,10 @@ export function CheckScreenPermission() {
   return window['go']['app']['App']['CheckScreenPermission']();
 }
 
+export function ConnectMQTT() {
+  return window['go']['app']['App']['ConnectMQTT']();
+}
+
 export function GetActivitySettings() {
   return window['go']['app']['App']['GetActivitySettings']();
 }
@@ -38,16 +42,16 @@ export function GetDashboardStats(arg1) {
   return window['go']['app']['App']['GetDashboardStats'](arg1);
 }
 
+export function GetMQTTStatus() {
+  return window['go']['app']['App']['GetMQTTStatus']();
+}
+
 export function GetRecordingSettings() {
   return window['go']['app']['App']['GetRecordingSettings']();
 }
 
 export function GetRecordingStatus() {
   return window['go']['app']['App']['GetRecordingStatus']();
-}
-
-export function GetRequirements() {
-  return window['go']['app']['App']['GetRequirements']();
 }
 
 export function GetSettings() {
