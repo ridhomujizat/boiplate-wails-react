@@ -90,7 +90,13 @@ const MainLayout: React.FC = () => {
                         inlineCollapsed={collapsed}
                     />
                 </div>
-                <div style={{ flexShrink: 0, padding: '16px' }}>
+                <div style={{
+                    flexShrink: 0,
+                    paddingLeft: collapsed ? 0 : 16,
+                    paddingRight: collapsed ? 0 : 16,
+                    paddingBottom: 12,
+                    paddingTop: 8
+                }}>
                     <Menu
                         theme="dark"
                         mode="inline"
