@@ -35,7 +35,7 @@ func (s *Service) Connect(callback mqtt.MessageHandler) error {
 	userKey := fmt.Sprintf("%s:record:%s", tenant, deviceID)
 	topic := strings.ReplaceAll(userKey, ":", "/")
 
-	fmt.Printf("MQTT topic: %s\n", topic)
+	fmt.Printf("[MQTT DEBUG] Subscribing to topic: %s (Tenant: %s, DeviceID: %s, Broker: %s)\n", topic, tenant, deviceID, mqttURL)
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(mqttURL)
@@ -69,7 +69,7 @@ func (s *Service) Connect(callback mqtt.MessageHandler) error {
 		// s.rp.Logger.CreateLogInfo(logSuccess, "mqtt_service_connect", nil)
 		// helper.LogErrorToFile("app.log", logSuccess, nil)
 
-		if token := client.Subscribe(topic, 1, nil); token.Wait() && token.Error() != nil {
+		if token := client.Subscribe(topic, 1, callback); token.Wait() && token.Error() != nil {
 			// logerror := fmt.Sprintf("Failed to subscribe to topic %s: %v", topic, token.Error())
 			log.Printf("Gagal subscribe ke topic %s: %v", topic, token.Error())
 			// Log error to file
@@ -91,9 +91,7 @@ func (s *Service) Connect(callback mqtt.MessageHandler) error {
 
 	}
 
-	// Biarkan program jalan terus
-	select {}
-
+	return nil
 }
 
 func (s *Service) Disconnect() {

@@ -14,8 +14,10 @@ import (
 	activityService "onx-screen-record/internal/service/activity"
 	"onx-screen-record/internal/service/auth"
 	"onx-screen-record/internal/service/integration"
+	mqttService "onx-screen-record/internal/service/mqtt"
 	"onx-screen-record/internal/service/setting"
 
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -32,6 +34,7 @@ type App struct {
 
 	setting         setting.IService
 	auth            auth.IService
+	mqtt            mqttService.IService
 	recorder        *recorder.RecorderManager
 	activityTracker *activityService.Tracker
 
@@ -71,6 +74,10 @@ func (a *App) Startup(ctx context.Context) {
 		return settings.BaseUrl, nil
 	})
 
+	// Initialize MQTT service (do not connect yet)
+	a.mqtt = mqttService.NewService(a.ctx, a.auth, a.rp, a.setting)
+	logger.Info.Printf("MQTT service initialized")
+
 	outputDir, _ := a.path.GetStreamDataDir()
 	tempDir, _ := a.path.GetTempDataDir()
 	a.recorder = recorder.NewRecorderManager(recorder.RecordingConfig{
@@ -99,16 +106,57 @@ func (a *App) Greet(name string) string {
 
 // Login performs user authentication via API
 func (a *App) Login(email string, password string) interface{} {
-
 	response, err := a.auth.Login(email, password)
 	if err != nil {
 		logger.Error.Printf("Login error: %v", err)
+		return response
 	}
+
+	// Check if login was successful by validating token presence
+	if response.Data.Token != "" {
+		logger.Info.Printf("Login successful, connecting to MQTT...")
+
+		// Connect to MQTT in goroutine to avoid blocking login response
+		go a.connectMQTT()
+	}
+
 	return response
+}
+
+// connectMQTT establishes MQTT connection with message handler
+func (a *App) connectMQTT() {
+	// Define message handler for incoming MQTT messages
+	messageHandler := func(client mqtt.Client, msg mqtt.Message) {
+		logger.Info.Printf("MQTT message received - Topic: %s, Payload: %s",
+			msg.Topic(), string(msg.Payload()))
+
+		// Emit event to frontend for real-time message handling
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "mqtt-message", map[string]interface{}{
+				"topic":   msg.Topic(),
+				"payload": string(msg.Payload()),
+			})
+		}
+	}
+
+	// Attempt connection (errors logged but don't prevent app usage)
+	if err := a.mqtt.Connect(messageHandler); err != nil {
+		logger.Error.Printf("Failed to connect to MQTT: %v", err)
+		return
+	}
+
+	logger.Info.Printf("MQTT connection initiated")
 }
 
 // Logout performs user logout
 func (a *App) Logout(token string) interface{} {
+	// Disconnect MQTT before logging out
+	if a.mqtt != nil && a.mqtt.IsConnected() {
+		logger.Info.Printf("Disconnecting MQTT on logout...")
+		a.mqtt.Disconnect()
+		logger.Info.Printf("MQTT disconnected")
+	}
+
 	response, err := a.auth.Logout(token)
 	if err != nil {
 		logger.Error.Printf("Logout error: %v", err)
@@ -140,6 +188,12 @@ func (a *App) GetRequirements() []Requirement {
 }
 
 func (a *App) Quit() {
+	// Disconnect MQTT if connected
+	if a.mqtt != nil && a.mqtt.IsConnected() {
+		logger.Info.Printf("Disconnecting MQTT on quit...")
+		a.mqtt.Disconnect()
+	}
+
 	if a.activityTracker != nil {
 		a.activityTracker.Stop()
 	}
