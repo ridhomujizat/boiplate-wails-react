@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Typography, Tag, Space, Spin } from 'antd';
+import { Card, Row, Col, Typography, Space, Badge } from 'antd';
 import {
     CheckCircleOutlined,
     CloseCircleOutlined,
-    ApiOutlined,
-    ReloadOutlined
+    VideoCameraOutlined,
+    CloudOutlined
 } from '@ant-design/icons';
 import { GetMQTTStatus } from '../../wailsjs/go/app/App';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
+import { useAuth } from '../contexts/AuthContext';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 interface MQTTStatus {
     connected: boolean;
@@ -17,11 +18,11 @@ interface MQTTStatus {
 }
 
 const Home: React.FC = () => {
+    const { user } = useAuth();
     const [mqttStatus, setMqttStatus] = useState<MQTTStatus>({
         connected: false,
         message: 'Checking...'
     });
-    const [loading, setLoading] = useState(true);
 
     const fetchMQTTStatus = async () => {
         try {
@@ -33,23 +34,13 @@ const Home: React.FC = () => {
                 connected: false,
                 message: 'Failed to check status'
             });
-        } finally {
-            setLoading(false);
         }
     };
 
     useEffect(() => {
-        // Initial fetch
         fetchMQTTStatus();
-
-        // Poll status every 5 seconds
         const interval = setInterval(fetchMQTTStatus, 5000);
-
-        // Listen for MQTT messages (indicates connection is active)
-        const unsubscribe = EventsOn('mqtt-message', () => {
-            // When we receive MQTT messages, update status immediately
-            fetchMQTTStatus();
-        });
+        const unsubscribe = EventsOn('mqtt-message', fetchMQTTStatus);
 
         return () => {
             clearInterval(interval);
@@ -57,126 +48,83 @@ const Home: React.FC = () => {
         };
     }, []);
 
-    const handleRefresh = () => {
-        setLoading(true);
-        fetchMQTTStatus();
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good Morning';
+        if (hour < 18) return 'Good Afternoon';
+        return 'Good Evening';
     };
 
     return (
         <div className="p-6">
-            <Title level={2} style={{ color: '#4c1d95', marginBottom: 24 }}>
-                System Status
-            </Title>
+            {/* Welcome Section */}
+            <div style={{ marginBottom: 32 }}>
+                <Title level={2} style={{ color: '#4c1d95', marginBottom: 8 }}>
+                    {getGreeting()}{user?.email ? `, ${user.email.split('@')[0]}` : ''}!
+                </Title>
+                <Text type="secondary" style={{ fontSize: 16 }}>
+                    Welcome to ONX Screen Record
+                </Text>
+            </div>
 
-            <Row gutter={[16, 16]}>
-                <Col xs={24} lg={12}>
+            <Row gutter={[24, 24]}>
+                {/* Connection Status Card */}
+                <Col xs={24} md={12}>
                     <Card
-                        title={
-                            <Space>
-                                <ApiOutlined style={{ color: '#7c3aed' }} />
-                                <span>MQTT Connection</span>
-                            </Space>
-                        }
-                        extra={
-                            <ReloadOutlined
-                                onClick={handleRefresh}
-                                style={{ cursor: 'pointer', fontSize: 16 }}
-                                spin={loading}
-                            />
-                        }
+                        style={{
+                            borderRadius: 12,
+                            height: '100%',
+                            background: mqttStatus.connected
+                                ? 'linear-gradient(135deg, #f6ffed 0%, #ffffff 100%)'
+                                : 'linear-gradient(135deg, #fff1f0 0%, #ffffff 100%)',
+                            border: mqttStatus.connected
+                                ? '2px solid #b7eb8f'
+                                : '2px solid #ffccc7'
+                        }}
                     >
-                        {loading ? (
-                            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                                <Spin />
-                            </div>
-                        ) : (
-                            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                 <div style={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: 12,
+                                    background: mqttStatus.connected ? '#f6ffed' : '#fff1f0',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'space-between'
+                                    justifyContent: 'center'
                                 }}>
-                                    <Text strong style={{ fontSize: 16 }}>Status:</Text>
-                                    <Tag
-                                        icon={mqttStatus.connected ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-                                        color={mqttStatus.connected ? 'success' : 'error'}
-                                        style={{ fontSize: 14, padding: '4px 12px' }}
-                                    >
-                                        {mqttStatus.connected ? 'Connected' : 'Disconnected'}
-                                    </Tag>
+                                    <CloudOutlined
+                                        style={{
+                                            fontSize: 24,
+                                            color: mqttStatus.connected ? '#52c41a' : '#ff4d4f'
+                                        }}
+                                    />
                                 </div>
-
-                                <div>
-                                    <Text type="secondary">{mqttStatus.message}</Text>
+                                <div style={{ flex: 1 }}>
+                                    <Text strong style={{ fontSize: 18, display: 'block' }}>
+                                        Connection
+                                    </Text>
+                                    <Badge
+                                        status={mqttStatus.connected ? 'success' : 'error'}
+                                        text={mqttStatus.connected ? 'Connected' : 'Not Connected'}
+                                        style={{ fontSize: 14 }}
+                                    />
                                 </div>
-
-                                {mqttStatus.connected && (
-                                    <div style={{
-                                        background: '#f6ffed',
-                                        border: '1px solid #b7eb8f',
-                                        borderRadius: 4,
-                                        padding: 12,
-                                        marginTop: 8
-                                    }}>
-                                        <Text style={{ color: '#52c41a' }}>
-                                            ✓ Ready to receive real-time commands
-                                        </Text>
-                                    </div>
+                                {mqttStatus.connected ? (
+                                    <CheckCircleOutlined
+                                        style={{ fontSize: 32, color: '#52c41a' }}
+                                    />
+                                ) : (
+                                    <CloseCircleOutlined
+                                        style={{ fontSize: 32, color: '#ff4d4f' }}
+                                    />
                                 )}
-
-                                {!mqttStatus.connected && (
-                                    <div style={{
-                                        background: '#fff1f0',
-                                        border: '1px solid #ffccc7',
-                                        borderRadius: 4,
-                                        padding: 12,
-                                        marginTop: 8
-                                    }}>
-                                        <Text style={{ color: '#ff4d4f' }}>
-                                            ⓘ Please check your MQTT broker settings
-                                        </Text>
-                                    </div>
-                                )}
-                            </Space>
-                        )}
-                    </Card>
-                </Col>
-
-                <Col xs={24} lg={12}>
-                    <Card
-                        title={
-                            <Space>
-                                <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                                <span>Quick Info</span>
-                            </Space>
-                        }
-                    >
-                        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                            <div>
-                                <Text strong>Welcome to ONX Screen Record</Text>
-                            </div>
-                            <div style={{ paddingTop: 8 }}>
-                                <Text type="secondary">
-                                    Your screen recording application is ready to use.
-                                    The MQTT connection enables remote control and
-                                    real-time synchronization with the backend system.
-                                </Text>
-                            </div>
-                            <div style={{
-                                background: '#f0f5ff',
-                                border: '1px solid #adc6ff',
-                                borderRadius: 4,
-                                padding: 12,
-                                marginTop: 8
-                            }}>
-                                <Text style={{ color: '#1890ff' }}>
-                                    💡 Navigate to Recording to start capturing your screen
-                                </Text>
                             </div>
                         </Space>
                     </Card>
                 </Col>
             </Row>
+
         </div>
     );
 };
