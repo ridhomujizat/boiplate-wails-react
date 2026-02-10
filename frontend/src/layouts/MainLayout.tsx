@@ -59,27 +59,38 @@ const MainLayout: React.FC = () => {
     };
 
     return (
-        <Layout className="min-h-screen">
-            <Sider
-                trigger={null}
-                collapsible
-                collapsed={collapsed}
-                style={{ background: '#4c1d95' }}
+        <Layout style={{ minHeight: '100vh' }}>
+            <div
+                style={{
+                    position: 'fixed',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: collapsed ? 80 : 200,
+                    background: '#4c1d95',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    zIndex: 1000,
+                    transition: 'width 0.2s'
+                }}
             >
-                <div className="h-16 flex items-center justify-center">
+                <div className="h-16 flex items-center justify-center" style={{ flexShrink: 0 }}>
                     {/* <span className="text-white text-lg font-bold">
                         {collapsed ? 'ONX' : 'ONX'}
                     </span> */}
                 </div>
-                <Menu
-                    theme="dark"
-                    mode="inline"
-                    selectedKeys={[location.pathname]}
-                    items={menuItems}
-                    onClick={handleMenuClick}
-                    style={{ background: '#4c1d95' }}
-                />
-                <div className="absolute bottom-4 left-0 right-0 px-4">
+                <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+                    <Menu
+                        theme="dark"
+                        mode="inline"
+                        selectedKeys={[location.pathname]}
+                        items={menuItems}
+                        onClick={handleMenuClick}
+                        style={{ background: '#4c1d95', border: 'none' }}
+                        inlineCollapsed={collapsed}
+                    />
+                </div>
+                <div style={{ flexShrink: 0, padding: '16px' }}>
                     <Menu
                         theme="dark"
                         mode="inline"
@@ -92,11 +103,12 @@ const MainLayout: React.FC = () => {
                                 onClick: handleLogout,
                             }
                         ]}
-                        style={{ background: '#4c1d95' }}
+                        style={{ background: '#4c1d95', border: 'none' }}
+                        inlineCollapsed={collapsed}
                     />
                 </div>
-            </Sider>
-            <Layout>
+            </div>
+            <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
                 <Header
                     className="flex items-center justify-between px-4"
                     style={{ background: '#fff', padding: '0 24px' }}
