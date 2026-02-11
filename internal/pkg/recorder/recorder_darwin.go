@@ -5,6 +5,7 @@ package recorder
 
 import (
 	"fmt"
+	"onx-screen-record/internal/pkg/ffmpeg"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -39,7 +40,7 @@ func (r *RecorderManager) StartRecording() error {
 	}
 
 	scaleFilter := fmt.Sprintf("scale=%d:%d", width, height)
-	screenCmd := exec.Command("ffmpeg",
+	screenCmd := ffmpeg.Command(
 		"-f", "avfoundation",
 		"-capture_cursor", "1",
 		"-framerate", "15",
@@ -196,7 +197,7 @@ func (r *RecorderManager) StopRecording() (string, error) {
 }
 
 func (r *RecorderManager) muxVideoAudio(videoPath, audioPath, outputPath string) error {
-	cmd := exec.Command("ffmpeg",
+	cmd := ffmpeg.Command(
 		"-i", videoPath,
 		"-i", audioPath,
 		"-c:v", "copy",
@@ -216,7 +217,7 @@ func (r *RecorderManager) muxVideoAudio(videoPath, audioPath, outputPath string)
 }
 
 func (r *RecorderManager) mixAudioFiles(audio1Path, audio2Path, outputPath string) error {
-	cmd := exec.Command("ffmpeg",
+	cmd := ffmpeg.Command(
 		"-i", audio1Path,
 		"-i", audio2Path,
 		"-filter_complex", "amix=inputs=2:duration=longest:dropout_transition=0",
@@ -240,7 +241,7 @@ func fileExists(path string) bool {
 func convertToWebM(inputPath string) string {
 	webmPath := inputPath[:len(inputPath)-4] + ".webm"
 
-	cmd := exec.Command("ffmpeg",
+	cmd := ffmpeg.Command(
 		"-i", inputPath,
 		"-c:v", "libvpx-vp9",
 		"-crf", "40",

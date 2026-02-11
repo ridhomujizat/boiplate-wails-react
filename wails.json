@@ -11,8 +11,11 @@
     "email": "ridhomujizat@gmail.com"
   },
   "info": {
+    "companyName": "Infomedia",
     "productVersion": "1.0.0",
     "productName": "ONX Screen Record",
+    "copyright": "Copyright 2024 Infomedia",
+    "comments": "Screen recording application with activity tracking",
     "protocols": [
       {
         "scheme": "onxrecord",

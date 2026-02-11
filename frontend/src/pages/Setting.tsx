@@ -33,7 +33,8 @@ import {
     GetRecordingSettings,
     SaveRecordingSettings,
     GetUploadSettings,
-    SaveUploadSettings
+    SaveUploadSettings,
+    CheckFFmpegAvailability
 } from '../../wailsjs/go/app/App';
 import { app } from '../../wailsjs/go/models';
 
@@ -68,6 +69,7 @@ interface UploadFormValues {
 interface PermissionState {
     screen: { granted: boolean; message: string };
     accessibility: { granted: boolean; message: string };
+    ffmpeg: { granted: boolean; message: string };
 }
 
 const Setting: React.FC = () => {
@@ -86,7 +88,8 @@ const Setting: React.FC = () => {
     // Permission states
     const [permissions, setPermissions] = useState<PermissionState>({
         screen: { granted: false, message: 'Checking...' },
-        accessibility: { granted: false, message: 'Checking...' }
+        accessibility: { granted: false, message: 'Checking...' },
+        ffmpeg: { granted: false, message: 'Checking...' }
     });
 
     // Audio devices
@@ -128,10 +131,12 @@ const Setting: React.FC = () => {
         try {
             const screenStatus = await CheckScreenPermission();
             const accessibilityStatus = await CheckAccessibilityPermission();
+            const ffmpegStatus = await CheckFFmpegAvailability();
 
             setPermissions({
                 screen: { granted: screenStatus.granted, message: screenStatus.message },
-                accessibility: { granted: accessibilityStatus.granted, message: accessibilityStatus.message }
+                accessibility: { granted: accessibilityStatus.granted, message: accessibilityStatus.message },
+                ffmpeg: { granted: ffmpegStatus.granted, message: ffmpegStatus.message }
             });
         } catch (error) {
             console.error('Failed to check permissions:', error);
@@ -403,6 +408,43 @@ const Setting: React.FC = () => {
                             )}
                         </Space>
                     </div>
+
+                    <Divider style={{ margin: '8px 0' }} />
+
+                    {/* FFmpeg Availability */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Space>
+                            <VideoCameraOutlined style={{ fontSize: 18, color: '#7c3aed' }} />
+                            <div>
+                                <Text strong>FFmpeg</Text>
+                                <br />
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Required for screen recording and video processing
+                                </Text>
+                            </div>
+                        </Space>
+                        <Space>
+                            <Tag
+                                icon={permissions.ffmpeg.granted ? <CheckCircleOutlined /> : <ExclamationCircleOutlined />}
+                                color={permissions.ffmpeg.granted ? 'success' : 'error'}
+                            >
+                                {permissions.ffmpeg.granted ? 'Available' : 'Not Found'}
+                            </Tag>
+                        </Space>
+                    </div>
+                    {!permissions.ffmpeg.granted && permissions.ffmpeg.message && permissions.ffmpeg.message !== 'Checking...' && (
+                        <div style={{
+                            marginTop: 8,
+                            padding: '8px 12px',
+                            backgroundColor: '#fff2f0',
+                            border: '1px solid #ffccc7',
+                            borderRadius: 6,
+                            color: '#cf1322',
+                            fontSize: 12
+                        }}>
+                            {permissions.ffmpeg.message}
+                        </div>
+                    )}
                 </div>
             </Card>
 

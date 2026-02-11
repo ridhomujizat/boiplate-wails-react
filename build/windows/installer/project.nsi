@@ -59,6 +59,7 @@ ManifestDPIAware true
 !insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
 # !insertmacro MUI_PAGE_LICENSE "resources\eula.txt" # Adds a EULA page to the installer
 !insertmacro MUI_PAGE_DIRECTORY # In which folder install page.
+!insertmacro MUI_PAGE_COMPONENTS # Component selection page.
 !insertmacro MUI_PAGE_INSTFILES # Installing page.
 !insertmacro MUI_PAGE_FINISH # Finished installation page.
 
@@ -79,7 +80,9 @@ Function .onInit
    !insertmacro wails.checkArchitecture
 FunctionEnd
 
-Section
+Section "Application (required)" SecApp
+    SectionIn RO # Make this section required
+
     !insertmacro wails.setShellContext
 
     !insertmacro wails.webview2runtime
@@ -87,6 +90,10 @@ Section
     SetOutPath $INSTDIR
 
     !insertmacro wails.files
+
+    # Bundle FFmpeg - must be placed in resources/ before building installer
+    # Run scripts/download-ffmpeg.ps1 to download ffmpeg.exe
+    File /nonfatal "/oname=ffmpeg.exe" "resources\ffmpeg.exe"
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
@@ -97,6 +104,22 @@ Section
     !insertmacro wails.writeUninstaller
 SectionEnd
 
+Section "Auto-start with Windows" SecAutoStart
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${INFO_PRODUCTNAME}" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+SectionEnd
+
+Section "Add firewall rule" SecFirewall
+    # Allow the application through Windows Firewall (for integration server on port 55551)
+    nsExec::ExecToLog 'netsh advfirewall firewall add rule name="${INFO_PRODUCTNAME}" dir=in action=allow program="$INSTDIR\${PRODUCT_EXECUTABLE}" enable=yes profile=any'
+SectionEnd
+
+# Component descriptions
+!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecApp} "Install ${INFO_PRODUCTNAME} with bundled FFmpeg."
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecAutoStart} "Automatically start ${INFO_PRODUCTNAME} when Windows starts."
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecFirewall} "Add a Windows Firewall rule to allow the integration server."
+!insertmacro MUI_FUNCTION_DESCRIPTION_END
+
 Section "uninstall"
     !insertmacro wails.setShellContext
 
@@ -106,6 +129,12 @@ Section "uninstall"
 
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
     Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
+
+    # Remove auto-start registry key
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${INFO_PRODUCTNAME}"
+
+    # Remove firewall rule
+    nsExec::ExecToLog 'netsh advfirewall firewall delete rule name="${INFO_PRODUCTNAME}"'
 
     !insertmacro wails.unassociateFiles
     !insertmacro wails.unassociateCustomProtocols

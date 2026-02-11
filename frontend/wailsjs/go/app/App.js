@@ -6,6 +6,10 @@ export function CheckAccessibilityPermission() {
   return window['go']['app']['App']['CheckAccessibilityPermission']();
 }
 
+export function CheckFFmpegAvailability() {
+  return window['go']['app']['App']['CheckFFmpegAvailability']();
+}
+
 export function CheckScreenPermission() {
   return window['go']['app']['App']['CheckScreenPermission']();
 }

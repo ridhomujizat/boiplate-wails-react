@@ -2,6 +2,7 @@ package app
 
 import (
 	"onx-screen-record/internal/pkg/audio"
+	"onx-screen-record/internal/pkg/ffmpeg"
 	"onx-screen-record/internal/pkg/permission"
 	"onx-screen-record/internal/pkg/recorder"
 	dtoSetting "onx-screen-record/internal/service/setting/dto"
@@ -86,6 +87,15 @@ func (a *App) CheckAccessibilityPermission() PermissionStatus {
 		Granted: status.Granted,
 		Message: status.Message,
 	}
+}
+
+// CheckFFmpegAvailability checks if ffmpeg is installed and accessible
+func (a *App) CheckFFmpegAvailability() PermissionStatus {
+	version, err := ffmpeg.CheckAvailability()
+	if err != nil {
+		return PermissionStatus{Granted: false, Message: err.Error()}
+	}
+	return PermissionStatus{Granted: true, Message: version}
 }
 
 // RequestAccessibilityPermission requests accessibility permission

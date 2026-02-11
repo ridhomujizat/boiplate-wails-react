@@ -5,6 +5,8 @@ import {dto} from '../models';
 
 export function CheckAccessibilityPermission():Promise<app.PermissionStatus>;
 
+export function CheckFFmpegAvailability():Promise<app.PermissionStatus>;
+
 export function CheckScreenPermission():Promise<app.PermissionStatus>;
 
 export function ConnectMQTT():Promise<Record<string, any>>;

@@ -6,6 +6,7 @@ package recorder
 import (
 	"fmt"
 	"io"
+	"onx-screen-record/internal/pkg/ffmpeg"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,7 +44,7 @@ func (r *RecorderManager) StartRecording() error {
 
 	// Start FFmpeg screen capture using gdigrab
 	scaleFilter := fmt.Sprintf("scale=%d:%d", width, height)
-	screenCmd := exec.Command("ffmpeg",
+	screenCmd := ffmpeg.Command(
 		"-f", "gdigrab",
 		"-framerate", "15",
 		"-i", "desktop",
@@ -217,7 +218,7 @@ func (r *RecorderManager) StopRecording() (string, error) {
 
 // muxVideoAudio combines video and audio using FFmpeg
 func (r *RecorderManager) muxVideoAudio(videoPath, audioPath, outputPath string) error {
-	cmd := exec.Command("ffmpeg",
+	cmd := ffmpeg.Command(
 		"-i", videoPath,
 		"-i", audioPath,
 		"-c:v", "copy",
@@ -237,7 +238,7 @@ func (r *RecorderManager) muxVideoAudio(videoPath, audioPath, outputPath string)
 // mixAudioFiles mixes two audio files into one using FFmpeg's amix filter
 func (r *RecorderManager) mixAudioFiles(audio1Path, audio2Path, outputPath string) error {
 	// Use FFmpeg amix filter to mix both audio streams
-	cmd := exec.Command("ffmpeg",
+	cmd := ffmpeg.Command(
 		"-i", audio1Path,
 		"-i", audio2Path,
 		"-filter_complex", "amix=inputs=2:duration=longest:dropout_transition=0",
@@ -280,7 +281,7 @@ func convertToWebM(inputPath string) string {
 
 	// Convert using FFmpeg with VP9 video codec and Opus audio codec
 	// Using higher CRF (40) for better compression while maintaining text readability
-	cmd := exec.Command("ffmpeg",
+	cmd := ffmpeg.Command(
 		"-i", inputPath,
 		"-c:v", "libvpx-vp9",
 		"-crf", "40",
