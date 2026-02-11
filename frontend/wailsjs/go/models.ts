@@ -70,6 +70,7 @@ export namespace app {
 	}
 	export class MQTTStatus {
 	    connected: boolean;
+	    state: string;
 	    message: string;
 	
 	    static createFrom(source: any = {}) {
@@ -79,6 +80,7 @@ export namespace app {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.connected = source["connected"];
+	        this.state = source["state"];
 	        this.message = source["message"];
 	    }
 	}

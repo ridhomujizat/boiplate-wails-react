@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Typography, Space, Badge, Spin } from 'antd';
+import { Card, Row, Col, Typography, Space, Badge } from 'antd';
 import {
     CheckCircleOutlined,
     CloseCircleOutlined,
     CloudOutlined,
-    SyncOutlined,
     LoadingOutlined
 } from '@ant-design/icons';
 import { GetMQTTStatus } from '../../wailsjs/go/app/App';
@@ -15,15 +14,17 @@ const { Title, Text } = Typography;
 
 interface MQTTStatus {
     connected: boolean;
+    state: string;
     message: string;
 }
 
-type ConnectionState = 'connected' | 'disconnected' | 'connecting';
+type ConnectionState = 'connected' | 'disconnected' | 'connecting' | 'reconnecting';
 
 const Home: React.FC = () => {
     const { user } = useAuth();
     const [mqttStatus, setMqttStatus] = useState<MQTTStatus>({
         connected: false,
+        state: 'disconnected',
         message: 'Checking...'
     });
     const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
@@ -32,23 +33,12 @@ const Home: React.FC = () => {
         try {
             const status = await GetMQTTStatus();
             setMqttStatus(status);
-
-            // Determine connection state based on message
-            if (status.connected) {
-                setConnectionState('connected');
-            } else if (
-                status.message.includes('Checking') ||
-                status.message.includes('initiated') ||
-                status.message.includes('Attempting')
-            ) {
-                setConnectionState('connecting');
-            } else {
-                setConnectionState('disconnected');
-            }
+            setConnectionState(status.state as ConnectionState);
         } catch (error) {
             console.error('Failed to get MQTT status:', error);
             setMqttStatus({
                 connected: false,
+                state: 'disconnected',
                 message: 'Connection failed'
             });
             setConnectionState('disconnected');
@@ -57,12 +47,20 @@ const Home: React.FC = () => {
 
     useEffect(() => {
         fetchMQTTStatus();
-        const interval = setInterval(fetchMQTTStatus, 3000); // Check every 3 seconds
-        const unsubscribe = EventsOn('mqtt-message', fetchMQTTStatus);
+
+        // Listen for real-time MQTT status changes from backend
+        const unsubscribeStatus = EventsOn('mqtt-status', (data: { state: string }) => {
+            const state = data.state as ConnectionState;
+            setConnectionState(state);
+            setMqttStatus(prev => ({
+                ...prev,
+                connected: state === 'connected',
+                state: state,
+            }));
+        });
 
         return () => {
-            clearInterval(interval);
-            unsubscribe();
+            unsubscribeStatus();
         };
     }, []);
 
@@ -96,6 +94,16 @@ const Home: React.FC = () => {
                     badgeText: 'Connecting...',
                     message: 'Establishing connection with system...'
                 };
+            case 'reconnecting':
+                return {
+                    background: '#fffbe6',
+                    border: '2px solid #ffe58f',
+                    iconBg: '#fffbe6',
+                    iconColor: '#faad14',
+                    badgeStatus: 'processing' as const,
+                    badgeText: 'Reconnecting...',
+                    message: 'Connection lost. Reconnecting to system...'
+                };
             case 'disconnected':
             default:
                 return {
@@ -118,6 +126,7 @@ const Home: React.FC = () => {
             case 'connected':
                 return <CheckCircleOutlined style={{ fontSize: 32, color: '#52c41a' }} />;
             case 'connecting':
+            case 'reconnecting':
                 return <LoadingOutlined style={{ fontSize: 32, color: '#faad14' }} spin />;
             case 'disconnected':
             default:

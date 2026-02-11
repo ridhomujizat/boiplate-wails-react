@@ -29,6 +29,7 @@ type AudioDevice struct {
 // MQTTStatus represents the current MQTT connection status
 type MQTTStatus struct {
 	Connected bool   `json:"connected"`
+	State     string `json:"state"` // disconnected, connecting, connected, reconnecting
 	Message   string `json:"message"`
 }
 
@@ -176,9 +177,13 @@ type StopRecordingResponse struct {
 	FilePath string `json:"filePath"`
 }
 
-// StartRecording starts screen and audio recording.
-// Optional sessionId parameter sets the output filename (used by MQTT commands).
-func (a *App) StartRecording(sessionId ...string) StartRecordingResponse {
+// StartRecording starts screen and audio recording (called from frontend).
+func (a *App) StartRecording() StartRecordingResponse {
+	return a.startRecordingWithSession("")
+}
+
+// startRecordingWithSession starts recording with an optional session ID for the output filename.
+func (a *App) startRecordingWithSession(sessionId string) StartRecordingResponse {
 	// Get audio settings to configure microphone
 	audioSettings, _ := a.setting.GetAudioSettings()
 
@@ -189,12 +194,6 @@ func (a *App) StartRecording(sessionId ...string) StartRecordingResponse {
 	outputDir, _ := a.path.GetStreamDataDir()
 	tempDir, _ := a.path.GetTempDataDir()
 
-	// Determine session ID
-	sid := ""
-	if len(sessionId) > 0 && sessionId[0] != "" {
-		sid = sessionId[0]
-	}
-
 	// Update recorder config with current settings
 	a.recorder.UpdateConfig(recorder.RecordingConfig{
 		MicrophoneID:            audioSettings.MicrophoneID,
@@ -203,7 +202,7 @@ func (a *App) StartRecording(sessionId ...string) StartRecordingResponse {
 		TempDir:                 tempDir,
 		MaxRecordingTimeEnabled: recordingSettings.MaxRecordingTimeEnabled,
 		MaxRecordingTimeSeconds: recordingSettings.MaxRecordingTimeSeconds,
-		SessionId:               sid,
+		SessionId:               sessionId,
 	})
 
 	if err := a.recorder.StartRecording(); err != nil {
@@ -251,18 +250,29 @@ func (a *App) GetMQTTStatus() MQTTStatus {
 	if a.mqtt == nil {
 		return MQTTStatus{
 			Connected: false,
+			State:     "disconnected",
 			Message:   "MQTT service not initialized",
 		}
 	}
 
+	state := a.mqtt.GetConnectionState()
 	connected := a.mqtt.IsConnected()
-	message := "Not connected"
-	if connected {
+
+	var message string
+	switch state {
+	case "connected":
 		message = "Connected to MQTT broker"
+	case "connecting":
+		message = "Connecting to MQTT broker..."
+	case "reconnecting":
+		message = "Reconnecting to MQTT broker..."
+	default:
+		message = "Not connected"
 	}
 
 	return MQTTStatus{
 		Connected: connected,
+		State:     state,
 		Message:   message,
 	}
 }

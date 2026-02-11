@@ -206,7 +206,7 @@ func (a *App) handleMQTTRecordingCommand(payload []byte) {
 		}
 
 		// Start new recording with session ID
-		resp := a.StartRecording(msg.SessionId)
+		resp := a.startRecordingWithSession(msg.SessionId)
 		if !resp.Success {
 			logger.Error.Printf("[MQTT] Failed to start recording: %s", resp.Message)
 		} else {

@@ -15,9 +15,28 @@ func (s *Service) IsConnected() bool {
 	return s.isConnected
 }
 
+func (s *Service) GetConnectionState() string {
+	return s.connectionState
+}
+
 func (s *Service) Connect(callback mqtt.MessageHandler) error {
+	// Guard: if already connected or connecting, skip
+	if s.connectionState == StateConnecting || s.connectionState == StateConnected {
+		log.Printf("[MQTT] Already %s, skipping Connect()", s.connectionState)
+		return nil
+	}
+
+	// Disconnect existing client to prevent duplicate client ID loop
+	if s.mqttClient != nil {
+		s.mqttClient.Disconnect(250)
+		s.mqttClient = nil
+	}
+
+	s.setConnectionState(StateConnecting)
+
 	settings, err := s.setting.GetSettings()
 	if err != nil {
+		s.setConnectionState(StateDisconnected)
 		return err
 	}
 	mqttURL := settings.MqttBroker
@@ -25,10 +44,12 @@ func (s *Service) Connect(callback mqtt.MessageHandler) error {
 	deviceID, err := helper.GetDeviceID()
 	if err != nil {
 		logger.Error.Printf("Failed to get device ID: %v", err)
+		s.setConnectionState(StateDisconnected)
 		return err
 	}
 
 	if mqttURL == "" || tenant == "" || deviceID == "" {
+		s.setConnectionState(StateDisconnected)
 		log.Fatal("Environment variable VITE_APP_MQTT_URL, VITE_APP_TENANT, dan SESSION_ID harus diset")
 	}
 
@@ -50,45 +71,36 @@ func (s *Service) Connect(callback mqtt.MessageHandler) error {
 
 	opts.SetDefaultPublishHandler(callback)
 
-	// Callback ketika koneksi terputus
+	// Callback when connection is lost
 	opts.OnConnectionLost = func(client mqtt.Client, err error) {
 		s.isConnected = false
-		log.Printf("Koneksi MQTT terputus: %v", err)
-		// logerror := fmt.Sprintf("MQTT connection lost: %v", err)
-		// Log error to file
-		// s.rp.Logger.CreateLogError(logerror, "mqtt_service_disconnect", err)
-		// helper.LogErrorToFile("error.log", logerror, err)
+		s.setConnectionState(StateReconnecting)
+		log.Printf("MQTT connection lost: %v", err)
 	}
 
-	// Callback ketika koneksi berhasil
-	opts.OnConnect = func(client mqtt.Client) {
-		log.Println("Koneksi MQTT berhasil!")
-		s.isConnected = true
+	// Callback when reconnecting
+	opts.SetReconnectingHandler(func(client mqtt.Client, opts *mqtt.ClientOptions) {
+		s.setConnectionState(StateReconnecting)
+		log.Println("MQTT reconnecting...")
+	})
 
-		// logSuccess := "MQTT connected successfully"
-		// s.rp.Logger.CreateLogInfo(logSuccess, "mqtt_service_connect", nil)
-		// helper.LogErrorToFile("app.log", logSuccess, nil)
+	// Callback when connection is established
+	opts.OnConnect = func(client mqtt.Client) {
+		log.Println("MQTT connected!")
+		s.isConnected = true
+		s.setConnectionState(StateConnected)
 
 		if token := client.Subscribe(topic, 1, callback); token.Wait() && token.Error() != nil {
-			// logerror := fmt.Sprintf("Failed to subscribe to topic %s: %v", topic, token.Error())
-			log.Printf("Gagal subscribe ke topic %s: %v", topic, token.Error())
-			// Log error to file
-			// s.rp.Logger.CreateLogError(logerror, "mqtt_service_connect", token.Error())
-			// helper.LogErrorToFile("error.log", logerror, token.Error())
+			log.Printf("Failed to subscribe to topic %s: %v", topic, token.Error())
 		} else {
-			log.Printf("Berhasil subscribe ke topic: %s", topic)
+			log.Printf("Subscribed to topic: %s", topic)
 		}
 	}
 
 	client := mqtt.NewClient(opts)
 	s.mqttClient = client
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		// logerror := fmt.Sprintf("Failed to connect to MQTT broker: %v", token.Error())
-		// Log error to file
-		// s.rp.Logger.CreateLogError(logerror, "mqtt_service_connect", token.Error())
-		// helper.LogErrorToFile("error.log", logerror, token.Error())
-		// log.Fatalf("Gagal connect ke MQTT broker: %v", token.Error())
-
+		s.setConnectionState(StateDisconnected)
 	}
 
 	return nil
@@ -98,7 +110,7 @@ func (s *Service) Disconnect() {
 	if s.mqttClient != nil && s.mqttClient.IsConnected() {
 		s.mqttClient.Disconnect(250) // 250 ms timeout
 		s.isConnected = false
-
+		s.setConnectionState(StateDisconnected)
 	} else {
 		log.Println("MQTT client not connected or already disconnected")
 	}

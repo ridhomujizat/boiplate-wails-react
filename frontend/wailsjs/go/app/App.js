@@ -138,8 +138,8 @@ export function StartActivityTracking() {
   return window['go']['app']['App']['StartActivityTracking']();
 }
 
-export function StartRecording(arg1) {
-  return window['go']['app']['App']['StartRecording'](arg1);
+export function StartRecording() {
+  return window['go']['app']['App']['StartRecording']();
 }
 
 export function StopActivityTracking() {
