@@ -14,7 +14,9 @@ import {
     CheckCircleOutlined,
     ExclamationCircleOutlined,
     FieldTimeOutlined,
-    VideoCameraOutlined
+    VideoCameraOutlined,
+    CloudUploadOutlined,
+    DeleteOutlined
 } from '@ant-design/icons';
 import {
     GetSettings,
@@ -29,7 +31,9 @@ import {
     GetActivitySettings,
     SaveActivitySettings,
     GetRecordingSettings,
-    SaveRecordingSettings
+    SaveRecordingSettings,
+    GetUploadSettings,
+    SaveUploadSettings
 } from '../../wailsjs/go/app/App';
 import { app } from '../../wailsjs/go/models';
 
@@ -57,6 +61,10 @@ interface RecordingFormValues {
     maxRecordingTimeSeconds: number;
 }
 
+interface UploadFormValues {
+    deleteAfterUpload: boolean;
+}
+
 interface PermissionState {
     screen: { granted: boolean; message: string };
     accessibility: { granted: boolean; message: string };
@@ -67,11 +75,13 @@ const Setting: React.FC = () => {
     const [audioLoading, setAudioLoading] = useState(false);
     const [activityLoading, setActivityLoading] = useState(false);
     const [recordingLoading, setRecordingLoading] = useState(false);
+    const [uploadLoading, setUploadLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     const [form] = Form.useForm<SettingFormValues>();
     const [audioForm] = Form.useForm<AudioFormValues>();
     const [activityForm] = Form.useForm<ActivityFormValues>();
     const [recordingForm] = Form.useForm<RecordingFormValues>();
+    const [uploadForm] = Form.useForm<UploadFormValues>();
 
     // Permission states
     const [permissions, setPermissions] = useState<PermissionState>({
@@ -89,6 +99,7 @@ const Setting: React.FC = () => {
         loadAudioDevices();
         loadActivitySettings();
         loadRecordingSettings();
+        loadUploadSettings();
     }, []);
 
     const loadSettings = async () => {
@@ -157,6 +168,17 @@ const Setting: React.FC = () => {
             });
         } catch (error) {
             console.error('Failed to load recording settings:', error);
+        }
+    };
+
+    const loadUploadSettings = async () => {
+        try {
+            const settings = await GetUploadSettings();
+            uploadForm.setFieldsValue({
+                deleteAfterUpload: settings.deleteAfterUpload || false
+            });
+        } catch (error) {
+            console.error('Failed to load upload settings:', error);
         }
     };
 
@@ -245,6 +267,26 @@ const Setting: React.FC = () => {
             message.error('Failed to save recording settings');
         } finally {
             setRecordingLoading(false);
+        }
+    };
+
+    const handleUploadSave = async (values: UploadFormValues) => {
+        setUploadLoading(true);
+        try {
+            const result = await SaveUploadSettings({
+                deleteAfterUpload: values.deleteAfterUpload
+            });
+
+            if (result.success) {
+                message.success(result.message || 'Upload settings saved successfully!');
+            } else {
+                message.error(result.message || 'Failed to save upload settings');
+            }
+        } catch (error) {
+            console.error('Failed to save upload settings:', error);
+            message.error('Failed to save upload settings');
+        } finally {
+            setUploadLoading(false);
         }
     };
 
@@ -519,6 +561,59 @@ const Setting: React.FC = () => {
                             }}
                         >
                             Save Recording Settings
+                        </Button>
+                    </Form.Item>
+                </Form>
+            </Card>
+
+            {/* Upload Settings Section */}
+            <Card
+                title={
+                    <Space>
+                        <CloudUploadOutlined style={{ color: '#7c3aed' }} />
+                        <Text strong>Upload Settings</Text>
+                    </Space>
+                }
+                style={{ marginBottom: 24 }}
+            >
+                <Form
+                    form={uploadForm}
+                    layout="vertical"
+                    onFinish={handleUploadSave}
+                    initialValues={{
+                        deleteAfterUpload: false
+                    }}
+                >
+                    <Form.Item
+                        label={
+                            <Space>
+                                <DeleteOutlined style={{ color: '#7c3aed' }} />
+                                <span>Delete file after upload</span>
+                            </Space>
+                        }
+                        name="deleteAfterUpload"
+                        valuePropName="checked"
+                        extra="Automatically delete the local recording file after successful upload"
+                    >
+                        <Switch
+                            checkedChildren="ON"
+                            unCheckedChildren="OFF"
+                        />
+                    </Form.Item>
+
+                    <Form.Item style={{ marginTop: 16, marginBottom: 0 }}>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            icon={<SaveOutlined />}
+                            loading={uploadLoading}
+                            size="large"
+                            style={{
+                                backgroundColor: '#7c3aed',
+                                borderColor: '#7c3aed'
+                            }}
+                        >
+                            Save Upload Settings
                         </Button>
                     </Form.Item>
                 </Form>

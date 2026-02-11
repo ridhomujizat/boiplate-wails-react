@@ -331,3 +331,27 @@ func (a *App) SaveRecordingSettings(req dtoSetting.RecordingSettingRequest) Save
 		Message: result.Message,
 	}
 }
+
+func (a *App) GetUploadSettings() dtoSetting.UploadSettingResponse {
+	result, err := a.setting.GetUploadSettings()
+	if err != nil {
+		return dtoSetting.UploadSettingResponse{
+			DeleteAfterUpload: false,
+		}
+	}
+	return *result
+}
+
+func (a *App) SaveUploadSettings(req dtoSetting.UploadSettingRequest) SaveSettingsResponse {
+	result, err := a.setting.SaveUploadSettings(req)
+	if err != nil {
+		return SaveSettingsResponse{
+			Success: false,
+			Message: err.Error(),
+		}
+	}
+	return SaveSettingsResponse{
+		Success: result.Success,
+		Message: result.Message,
+	}
+}

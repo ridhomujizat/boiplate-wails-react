@@ -62,6 +62,10 @@ export function GetTopApplications(arg1, arg2) {
   return window['go']['app']['App']['GetTopApplications'](arg1, arg2);
 }
 
+export function GetUploadSettings() {
+  return window['go']['app']['App']['GetUploadSettings']();
+}
+
 export function Greet(arg1) {
   return window['go']['app']['App']['Greet'](arg1);
 }
@@ -124,6 +128,10 @@ export function SaveRecordingSettings(arg1) {
 
 export function SaveSettings(arg1) {
   return window['go']['app']['App']['SaveSettings'](arg1);
+}
+
+export function SaveUploadSettings(arg1) {
+  return window['go']['app']['App']['SaveUploadSettings'](arg1);
 }
 
 export function SetInitialDeepLink(arg1) {

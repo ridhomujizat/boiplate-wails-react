@@ -16,6 +16,7 @@ const (
 	KeyActivityAFKThreshold    = "activity_afk_threshold"
 	KeyMaxRecordingTimeEnabled = "max_recording_time_enabled"
 	KeyMaxRecordingTimeSeconds = "max_recording_time_seconds"
+	KeyDeleteAfterUpload       = "delete_after_upload"
 )
 
 // GetSettings retrieves all settings from the database
@@ -223,5 +224,36 @@ func (s *Service) SaveRecordingSettings(req dto.RecordingSettingRequest) (*dto.S
 	return &dto.SaveSettingResponse{
 		Success: true,
 		Message: "Recording settings saved successfully",
+	}, nil
+}
+
+func (s *Service) GetUploadSettings() (*dto.UploadSettingResponse, error) {
+	settingsMap, err := s.rp.Setting.GetAsMap()
+	if err != nil {
+		return nil, err
+	}
+
+	deleteAfterUpload := settingsMap[KeyDeleteAfterUpload] == "true"
+
+	return &dto.UploadSettingResponse{
+		DeleteAfterUpload: deleteAfterUpload,
+	}, nil
+}
+
+func (s *Service) SaveUploadSettings(req dto.UploadSettingRequest) (*dto.SaveSettingResponse, error) {
+	deleteValue := "false"
+	if req.DeleteAfterUpload {
+		deleteValue = "true"
+	}
+	if err := s.rp.Setting.Set(KeyDeleteAfterUpload, deleteValue, "bool"); err != nil {
+		return &dto.SaveSettingResponse{
+			Success: false,
+			Message: "Failed to save delete after upload setting: " + err.Error(),
+		}, err
+	}
+
+	return &dto.SaveSettingResponse{
+		Success: true,
+		Message: "Upload settings saved successfully",
 	}, nil
 }

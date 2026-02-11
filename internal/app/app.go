@@ -4,10 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"time"
 
+	"onx-screen-record/internal/common/enum"
 	types "onx-screen-record/internal/common/type"
+	"onx-screen-record/internal/pkg/helper"
 	"onx-screen-record/internal/pkg/logger"
 	pathHelper "onx-screen-record/internal/pkg/path-file"
 	"onx-screen-record/internal/pkg/recorder"
@@ -233,6 +238,7 @@ func (a *App) handleMQTTRecordingCommand(payload []byte) {
 			logger.Error.Printf("[MQTT] Failed to stop recording: %s", resp.Message)
 		} else {
 			logger.Info.Printf("[MQTT] Recording stopped, saved to: %s", resp.FilePath)
+			go a.uploadRecording(resp.FilePath, msg.SessionId)
 		}
 
 		// Emit recording state to frontend
@@ -245,6 +251,125 @@ func (a *App) handleMQTTRecordingCommand(payload []byte) {
 
 	default:
 		logger.Info.Printf("[MQTT] Unhandled action: %s", msg.Action)
+	}
+}
+
+// uploadRecording uploads the recording file to the server and optionally deletes it
+func (a *App) uploadRecording(filePath, sessionId string) {
+	logger.Info.Printf("[Upload] Starting upload for file: %s, session: %s", filePath, sessionId)
+
+	// Get settings
+	settings, err := a.setting.GetSettings()
+	if err != nil {
+		logger.Error.Printf("[Upload] Failed to get settings: %v", err)
+		return
+	}
+
+	if settings.BaseUrl == "" {
+		logger.Error.Printf("[Upload] BaseUrl is not configured")
+		return
+	}
+	if settings.TenantCode == "" {
+		logger.Error.Printf("[Upload] TenantCode is not configured")
+		return
+	}
+
+	// Read the file
+	fileBytes, err := os.ReadFile(filePath)
+	if err != nil {
+		logger.Error.Printf("[Upload] Failed to read file %s: %v", filePath, err)
+		return
+	}
+
+	logger.Info.Printf("[Upload] File size: %.2f MB, uploading to: %s/api/upload/file",
+		float64(len(fileBytes))/(1024*1024), settings.BaseUrl)
+
+	// Build multipart body
+	body := map[string]interface{}{
+		"file": types.BufferedFile{
+			OriginalName: filepath.Base(filePath),
+			MimeType:     "video/mp4",
+			MediaType:    "video",
+			Encoding:     "binary",
+			Buffer:       fileBytes,
+			Size:         len(fileBytes),
+		},
+		"folder":    settings.TenantCode,
+		"directory": settings.TenantCode,
+		"media":     "video",
+		"caption":   sessionId,
+	}
+
+	uploadURL := fmt.Sprintf("%s/api/upload/file", settings.BaseUrl)
+
+	resp, err := helper.HTTPRequest(
+		&helper.HTTPRequestPayload{
+			Method: enum.POST,
+			URL:    uploadURL,
+			Body:   body,
+		},
+		&helper.HTTPRequestConfig{
+			Ctx: context.Background(),
+			Headers: http.Header{
+				"Content-Type": []string{enum.MultipartForm.ToString()},
+			},
+		},
+	)
+
+	if err != nil {
+		logger.Error.Printf("[Upload] Failed to upload file: %v", err)
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "recording-uploaded", map[string]interface{}{
+				"success":   false,
+				"filePath":  filePath,
+				"sessionId": sessionId,
+				"error":     err.Error(),
+			})
+		}
+		return
+	}
+
+	// Log the response body for debugging
+	respDataJSON, _ := json.Marshal(resp.Data)
+	logger.Info.Printf("[Upload] Response status: %d, body: %s", resp.StatusCode, string(respDataJSON))
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		logger.Info.Printf("[Upload] ✓ File uploaded successfully to %s (status: %d, file: %s, session: %s)",
+			uploadURL, resp.StatusCode, filepath.Base(filePath), sessionId)
+
+		// Check if we should delete the local file
+		uploadSettings, err := a.setting.GetUploadSettings()
+		if err == nil && uploadSettings.DeleteAfterUpload {
+			if err := os.Remove(filePath); err != nil {
+				logger.Error.Printf("[Upload] Failed to delete local file: %v", err)
+			} else {
+				logger.Info.Printf("[Upload] ✓ Local file deleted: %s", filePath)
+			}
+		}
+
+		// Emit upload success event to frontend
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "recording-uploaded", map[string]interface{}{
+				"success":    true,
+				"filePath":   filePath,
+				"sessionId":  sessionId,
+				"statusCode": resp.StatusCode,
+				"response":   resp.Data,
+			})
+		}
+	} else {
+		logger.Error.Printf("[Upload] ✗ Upload failed (status: %d, file: %s, session: %s, response: %s)",
+			resp.StatusCode, filepath.Base(filePath), sessionId, string(respDataJSON))
+
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "recording-uploaded", map[string]interface{}{
+				"success":    false,
+				"filePath":   filePath,
+				"sessionId":  sessionId,
+				"statusCode": resp.StatusCode,
+				"response":   resp.Data,
+			})
+		}
 	}
 }
 

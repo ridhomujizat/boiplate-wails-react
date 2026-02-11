@@ -323,6 +323,30 @@ export namespace dto {
 	        this.mqttBroker = source["mqttBroker"];
 	    }
 	}
+	export class UploadSettingRequest {
+	    deleteAfterUpload: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new UploadSettingRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.deleteAfterUpload = source["deleteAfterUpload"];
+	    }
+	}
+	export class UploadSettingResponse {
+	    deleteAfterUpload: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new UploadSettingResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.deleteAfterUpload = source["deleteAfterUpload"];
+	    }
+	}
 
 }
 

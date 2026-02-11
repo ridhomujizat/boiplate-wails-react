@@ -55,3 +55,13 @@ type RecordingSettingResponse struct {
 	MaxRecordingTimeEnabled bool `json:"maxRecordingTimeEnabled"`
 	MaxRecordingTimeSeconds int  `json:"maxRecordingTimeSeconds"` // in seconds
 }
+
+// UploadSettingRequest represents the request body for saving upload settings
+type UploadSettingRequest struct {
+	DeleteAfterUpload bool `json:"deleteAfterUpload"`
+}
+
+// UploadSettingResponse represents the response body for getting upload settings
+type UploadSettingResponse struct {
+	DeleteAfterUpload bool `json:"deleteAfterUpload"`
+}

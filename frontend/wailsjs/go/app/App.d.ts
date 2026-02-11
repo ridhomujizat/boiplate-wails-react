@@ -33,6 +33,8 @@ export function GetSettings():Promise<dto.SettingResponse>;
 
 export function GetTopApplications(arg1:app.DateRange,arg2:number):Promise<Array<app.TopApplication>>;
 
+export function GetUploadSettings():Promise<dto.UploadSettingResponse>;
+
 export function Greet(arg1:string):Promise<string>;
 
 export function HandleDeepLink(arg1:string):Promise<void>;
@@ -64,6 +66,8 @@ export function SaveAudioSettings(arg1:dto.AudioSettingRequest):Promise<app.Save
 export function SaveRecordingSettings(arg1:dto.RecordingSettingRequest):Promise<app.SaveSettingsResponse>;
 
 export function SaveSettings(arg1:dto.SettingRequest):Promise<app.SaveSettingsResponse>;
+
+export function SaveUploadSettings(arg1:dto.UploadSettingRequest):Promise<app.SaveSettingsResponse>;
 
 export function SetInitialDeepLink(arg1:string):Promise<void>;
 
