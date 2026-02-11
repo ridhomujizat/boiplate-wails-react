@@ -10,15 +10,28 @@ import (
 )
 
 // GetPath returns the path to the ffmpeg binary.
-// On Windows, it first checks for a bundled ffmpeg.exe next to the application executable,
-// then falls back to exec.LookPath.
-// On other platforms, it uses exec.LookPath only.
+// On Windows, it checks for a bundled ffmpeg.exe next to the application executable.
+// On macOS, it checks for a bundled ffmpeg inside .app/Contents/Resources/.
+// Falls back to exec.LookPath on all platforms.
 func GetPath() (string, error) {
 	if runtime.GOOS == "windows" {
 		// Check for bundled ffmpeg.exe next to the application executable
 		exePath, err := os.Executable()
 		if err == nil {
 			bundledPath := filepath.Join(filepath.Dir(exePath), "ffmpeg.exe")
+			if _, err := os.Stat(bundledPath); err == nil {
+				return bundledPath, nil
+			}
+		}
+	}
+
+	if runtime.GOOS == "darwin" {
+		// Check for bundled ffmpeg inside .app/Contents/Resources/
+		exePath, err := os.Executable()
+		if err == nil {
+			// .app/Contents/MacOS/binary → .app/Contents/Resources/ffmpeg
+			contentsDir := filepath.Dir(filepath.Dir(exePath))
+			bundledPath := filepath.Join(contentsDir, "Resources", "ffmpeg")
 			if _, err := os.Stat(bundledPath); err == nil {
 				return bundledPath, nil
 			}

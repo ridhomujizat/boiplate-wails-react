@@ -1,4 +1,5 @@
 build/bin
 build/windows/installer/resources/
+build/darwin/resources/
 node_modules
 frontend/dist

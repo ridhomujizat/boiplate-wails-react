@@ -27,6 +27,8 @@
         <string>This app needs screen recording access to capture your screen and system audio.</string>
         <key>NSMicrophoneUsageDescription</key>
         <string>This app needs microphone access to record your voice.</string>
+        <key>NSAccessibilityUsageDescription</key>
+        <string>This app needs accessibility access to track active windows for activity monitoring.</string>
         {{if .Info.FileAssociations}}
         <key>CFBundleDocumentTypes</key>
         <array>
