@@ -176,8 +176,9 @@ type StopRecordingResponse struct {
 	FilePath string `json:"filePath"`
 }
 
-// StartRecording starts screen and audio recording
-func (a *App) StartRecording() StartRecordingResponse {
+// StartRecording starts screen and audio recording.
+// Optional sessionId parameter sets the output filename (used by MQTT commands).
+func (a *App) StartRecording(sessionId ...string) StartRecordingResponse {
 	// Get audio settings to configure microphone
 	audioSettings, _ := a.setting.GetAudioSettings()
 
@@ -188,6 +189,12 @@ func (a *App) StartRecording() StartRecordingResponse {
 	outputDir, _ := a.path.GetStreamDataDir()
 	tempDir, _ := a.path.GetTempDataDir()
 
+	// Determine session ID
+	sid := ""
+	if len(sessionId) > 0 && sessionId[0] != "" {
+		sid = sessionId[0]
+	}
+
 	// Update recorder config with current settings
 	a.recorder.UpdateConfig(recorder.RecordingConfig{
 		MicrophoneID:            audioSettings.MicrophoneID,
@@ -196,6 +203,7 @@ func (a *App) StartRecording() StartRecordingResponse {
 		TempDir:                 tempDir,
 		MaxRecordingTimeEnabled: recordingSettings.MaxRecordingTimeEnabled,
 		MaxRecordingTimeSeconds: recordingSettings.MaxRecordingTimeSeconds,
+		SessionId:               sid,
 	})
 
 	if err := a.recorder.StartRecording(); err != nil {

@@ -142,8 +142,14 @@ func (r *RecorderManager) StopRecording() (string, error) {
 		sckRecorderInstance = nil
 	}
 
-	timestamp := time.Now().Format("20060102_150405")
-	outputPath := filepath.Join(r.config.OutputDir, fmt.Sprintf("recording_%s.mp4", timestamp))
+	// Use SessionId as filename if available, otherwise fallback to timestamp
+	var outputName string
+	if r.config.SessionId != "" {
+		outputName = r.config.SessionId
+	} else {
+		outputName = fmt.Sprintf("recording_%s", time.Now().Format("20060102_150405"))
+	}
+	outputPath := filepath.Join(r.config.OutputDir, outputName+".mp4")
 
 	if err := os.MkdirAll(r.config.OutputDir, 0755); err != nil {
 		r.status = RecordingStatus{State: StateError, Error: err.Error()}
@@ -155,7 +161,7 @@ func (r *RecorderManager) StopRecording() (string, error) {
 
 	var err error
 	if hasMicAudio && hasSystemAudio {
-		mixedAudioPath := filepath.Join(r.config.TempDir, fmt.Sprintf("mixed_audio_%s.wav", timestamp))
+		mixedAudioPath := filepath.Join(r.config.TempDir, fmt.Sprintf("mixed_audio_%s.wav", outputName))
 		err = r.mixAudioFiles(r.tempAudioPath, r.tempSystemAudioPath, mixedAudioPath)
 		if err == nil {
 			err = r.muxVideoAudio(r.tempVideoPath, mixedAudioPath, outputPath)

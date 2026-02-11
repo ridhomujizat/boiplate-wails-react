@@ -71,7 +71,7 @@ export function ShowWindow():Promise<void>;
 
 export function StartActivityTracking():Promise<boolean>;
 
-export function StartRecording():Promise<app.StartRecordingResponse>;
+export function StartRecording(arg1:Array<string>):Promise<app.StartRecordingResponse>;
 
 export function StopActivityTracking():Promise<boolean>;
 

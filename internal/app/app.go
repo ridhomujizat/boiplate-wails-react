@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"time"
 
+	types "onx-screen-record/internal/common/type"
 	"onx-screen-record/internal/pkg/logger"
 	pathHelper "onx-screen-record/internal/pkg/path-file"
 	"onx-screen-record/internal/pkg/recorder"
@@ -162,6 +164,9 @@ func (a *App) connectMQTT() {
 				"payload": string(msg.Payload()),
 			})
 		}
+
+		// Handle recording commands from MQTT
+		a.handleMQTTRecordingCommand(msg.Payload())
 	}
 
 	// Attempt connection (errors logged but don't prevent app usage)
@@ -171,6 +176,76 @@ func (a *App) connectMQTT() {
 	}
 
 	logger.Info.Printf("[MQTT] Connection initiated successfully")
+}
+
+// handleMQTTRecordingCommand processes MQTT messages for recording control
+func (a *App) handleMQTTRecordingCommand(payload []byte) {
+	var msg types.RecordMQTTPayload
+	if err := json.Unmarshal(payload, &msg); err != nil {
+		logger.Error.Printf("[MQTT] Failed to parse recording command: %v", err)
+		return
+	}
+
+	logger.Info.Printf("[MQTT] Recording command received: action=%s, session_id=%s, client_id=%s",
+		msg.Action, msg.SessionId, msg.ClientID)
+
+	switch msg.Action {
+	case "start":
+		if msg.SessionId == "" {
+			logger.Error.Printf("[MQTT] Cannot start recording: session_id is empty")
+			return
+		}
+
+		// If already recording, stop existing recording first
+		status := a.recorder.GetStatus()
+		if status.State == recorder.StateRecording {
+			logger.Info.Printf("[MQTT] Stopping existing recording before starting new one")
+			if _, err := a.recorder.StopRecording(); err != nil {
+				logger.Error.Printf("[MQTT] Failed to stop existing recording: %v", err)
+			}
+		}
+
+		// Start new recording with session ID
+		resp := a.StartRecording(msg.SessionId)
+		if !resp.Success {
+			logger.Error.Printf("[MQTT] Failed to start recording: %s", resp.Message)
+		} else {
+			logger.Info.Printf("[MQTT] Recording started with session_id=%s", msg.SessionId)
+		}
+
+		// Emit recording state to frontend
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "recording-state", map[string]interface{}{
+				"state":      "recording",
+				"session_id": msg.SessionId,
+			})
+		}
+
+	case "stop":
+		status := a.recorder.GetStatus()
+		if status.State != recorder.StateRecording {
+			logger.Error.Printf("[MQTT] Cannot stop recording: no recording in progress")
+			return
+		}
+
+		resp := a.StopRecording()
+		if !resp.Success {
+			logger.Error.Printf("[MQTT] Failed to stop recording: %s", resp.Message)
+		} else {
+			logger.Info.Printf("[MQTT] Recording stopped, saved to: %s", resp.FilePath)
+		}
+
+		// Emit recording state to frontend
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "recording-state", map[string]interface{}{
+				"state":     "idle",
+				"file_path": resp.FilePath,
+			})
+		}
+
+	default:
+		logger.Info.Printf("[MQTT] Unhandled action: %s", msg.Action)
+	}
 }
 
 // ConnectMQTT is an exported method to connect MQTT (callable from frontend)

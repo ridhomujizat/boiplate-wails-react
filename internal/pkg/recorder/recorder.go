@@ -33,6 +33,7 @@ type RecordingConfig struct {
 	TempDir                 string
 	MaxRecordingTimeEnabled bool
 	MaxRecordingTimeSeconds int
+	SessionId               string // Used for output filename; falls back to timestamp if empty
 }
 
 // RecorderManager manages screen and audio recording
