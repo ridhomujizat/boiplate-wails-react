@@ -36,7 +36,6 @@ function AppRoutes() {
                 }
             >
                 <Route index element={<Home />} />
-                <Route path="profile" element={<div className="p-6">Profile Page</div>} />
                 <Route path="settings" element={<Setting />} />
                 <Route path="recording" element={<Recording />} />
                 <Route path="activity" element={<Activity />} />

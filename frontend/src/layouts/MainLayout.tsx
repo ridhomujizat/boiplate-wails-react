@@ -38,11 +38,6 @@ const MainLayout: React.FC = () => {
             label: 'Recording',
         },
         {
-            key: '/profile',
-            icon: <UserOutlined />,
-            label: 'Profile',
-        },
-        {
             key: '/settings',
             icon: <SettingOutlined />,
             label: 'Settings',
