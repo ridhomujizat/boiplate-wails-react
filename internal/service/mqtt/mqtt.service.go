@@ -68,27 +68,18 @@ func (s *Service) Connect(callback mqtt.MessageHandler) error {
 	opts.SetConnectRetry(true)
 	opts.SetConnectRetryInterval(5 * time.Second)
 	opts.SetCleanSession(true)
+	
+	// Add connection timeout
+	opts.SetConnectTimeout(10 * time.Second)
 
 	opts.SetDefaultPublishHandler(callback)
 
-	// Callback when connection is lost
-	opts.OnConnectionLost = func(client mqtt.Client, err error) {
-		s.isConnected = false
-		s.setConnectionState(StateReconnecting)
-		log.Printf("MQTT connection lost: %v", err)
-	}
-
-	// Callback when reconnecting
-	opts.SetReconnectingHandler(func(client mqtt.Client, opts *mqtt.ClientOptions) {
-		s.setConnectionState(StateReconnecting)
-		log.Println("MQTT reconnecting...")
-	})
-
 	// Callback when connection is established
 	opts.OnConnect = func(client mqtt.Client) {
-		log.Println("MQTT connected!")
+		log.Println("[MQTT] OnConnect callback triggered!")
 		s.isConnected = true
 		s.setConnectionState(StateConnected)
+		log.Printf("[MQTT] Connection state set to: %s", StateConnected)
 
 		if token := client.Subscribe(topic, 1, callback); token.Wait() && token.Error() != nil {
 			log.Printf("Failed to subscribe to topic %s: %v", topic, token.Error())
@@ -97,10 +88,31 @@ func (s *Service) Connect(callback mqtt.MessageHandler) error {
 		}
 	}
 
+	// Callback when connection is lost
+	opts.OnConnectionLost = func(client mqtt.Client, err error) {
+		s.isConnected = false
+		s.setConnectionState(StateReconnecting)
+		log.Printf("[MQTT] Connection lost: %v", err)
+	}
+
+	// Callback when reconnecting
+	opts.SetReconnectingHandler(func(client mqtt.Client, opts *mqtt.ClientOptions) {
+		s.setConnectionState(StateReconnecting)
+		log.Println("[MQTT] Reconnecting...")
+	})
+
 	client := mqtt.NewClient(opts)
 	s.mqttClient = client
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
+
+	log.Printf("[MQTT] Calling Connect() to broker: %s", mqttURL)
+	token := client.Connect()
+	token.Wait()
+	if token.Error() != nil {
+		log.Printf("[MQTT] Connect() error: %v", token.Error())
 		s.setConnectionState(StateDisconnected)
+	} else {
+		log.Println("[MQTT] Connect() initiated successfully, waiting for OnConnect callback...")
+		log.Printf("[MQTT] Client IsConnected: %v", client.IsConnected())
 	}
 
 	return nil

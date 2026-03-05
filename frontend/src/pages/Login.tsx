@@ -86,17 +86,17 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center bg-neutral-50">
             <div className="w-full max-w-md">
                 <Card
-                    className="w-full shadow-lg"
-                    styles={{ body: { padding: '40px' } }}
+                    className="w-full shadow-sm"
+                    styles={{ body: { padding: '48px 40px' } }}
                 >
-
-                    <div className="text-center mb-8">
-                        {/* <Title level={2} className="!mb-2" style={{ color: '#4c1d95' }}>
-                        Welcome Back
-                    </Title> */}
+                    <div className="mb-10">
+                        <div className="w-12 h-12 rounded-xl bg-primary-600 flex items-center justify-center mb-6">
+                            <UserOutlined className="text-white text-xl" />
+                        </div>
+                        <h1 className="text-2xl font-semibold text-neutral-900 mb-2">Welcome back</h1>
                         <Text type="secondary">Sign in to your account</Text>
                     </div>
 
@@ -114,8 +114,9 @@ const Login: React.FC = () => {
                             ]}
                         >
                             <Input
-                                prefix={<UserOutlined className="text-gray-400" />}
+                                prefix={<UserOutlined className="text-neutral-400" />}
                                 placeholder="Email"
+                                className="h-12"
                             />
                         </Form.Item>
 
@@ -124,8 +125,9 @@ const Login: React.FC = () => {
                             rules={[{ required: true, message: 'Please input your password!' }]}
                         >
                             <Input.Password
-                                prefix={<LockOutlined className="text-gray-400" />}
+                                prefix={<LockOutlined className="text-neutral-400" />}
                                 placeholder="Password"
+                                className="h-12"
                             />
                         </Form.Item>
 
@@ -135,23 +137,18 @@ const Login: React.FC = () => {
                                 htmlType="submit"
                                 loading={loading}
                                 block
-                                style={{
-                                    backgroundColor: '#7c3aed',
-                                    borderColor: '#7c3aed',
-                                    height: '48px'
-                                }}
+                                className="h-12 text-base font-medium"
                             >
                                 Sign In
                             </Button>
                         </Form.Item>
                     </Form>
                 </Card>
-                {/* Settings gear icon - below card */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
                     <Tooltip title="Settings">
                         <Button
                             type="text"
-                            icon={<SettingOutlined style={{ fontSize: 20, color: '#7c3aed' }} />}
+                            icon={<SettingOutlined style={{ fontSize: 20 }} />}
                             onClick={openSettings}
                             id="login-settings-btn"
                         />
@@ -159,12 +156,11 @@ const Login: React.FC = () => {
                 </div>
             </div>
 
-            {/* Settings Modal */}
             <Modal
                 title={
                     <Space>
-                        <SettingOutlined style={{ color: '#7c3aed' }} />
-                        <span>Server Configuration</span>
+                        <SettingOutlined />
+                        <span className="font-medium">Server Configuration</span>
                     </Space>
                 }
                 open={settingsOpen}
@@ -174,7 +170,7 @@ const Login: React.FC = () => {
             >
                 {settingsLoading ? (
                     <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                        <Spin indicator={<LoadingOutlined style={{ fontSize: 36, color: '#7c3aed' }} spin />} />
+                        <Spin indicator={<LoadingOutlined style={{ fontSize: 36 }} spin />} />
                     </div>
                 ) : (
                     <Form
@@ -190,8 +186,8 @@ const Login: React.FC = () => {
                         <Form.Item
                             label={
                                 <Space>
-                                    <BankOutlined style={{ color: '#7c3aed' }} />
-                                    <span>Tenant Code</span>
+                                    <BankOutlined />
+                                    <span className="font-medium">Tenant Code</span>
                                 </Space>
                             }
                             name="tenantCode"
@@ -203,8 +199,8 @@ const Login: React.FC = () => {
                         <Form.Item
                             label={
                                 <Space>
-                                    <GlobalOutlined style={{ color: '#7c3aed' }} />
-                                    <span>Base URL</span>
+                                    <GlobalOutlined />
+                                    <span className="font-medium">Base URL</span>
                                 </Space>
                             }
                             name="baseUrl"
@@ -219,8 +215,8 @@ const Login: React.FC = () => {
                         <Form.Item
                             label={
                                 <Space>
-                                    <CloudServerOutlined style={{ color: '#7c3aed' }} />
-                                    <span>MQTT Broker</span>
+                                    <CloudServerOutlined />
+                                    <span className="font-medium">MQTT Broker</span>
                                 </Space>
                             }
                             name="mqttBroker"
@@ -237,11 +233,7 @@ const Login: React.FC = () => {
                                 loading={settingsSaving}
                                 block
                                 size="large"
-                                style={{
-                                    backgroundColor: '#7c3aed',
-                                    borderColor: '#7c3aed',
-                                    height: '48px'
-                                }}
+                                className="h-12 font-medium"
                             >
                                 Save Settings
                             </Button>

@@ -179,57 +179,44 @@ const Recording: React.FC = () => {
 
     return (
         <div className="p-6" style={{ maxWidth: 800 }}>
-            <Title level={2} style={{ color: '#4c1d95', marginBottom: 24 }}>
+            <Title level={2} style={{ color: '#171717', marginBottom: 24, fontWeight: 600 }}>
                 <VideoCameraOutlined style={{ marginRight: 12 }} />
                 Screen Recording
             </Title>
 
-            {/* Recording Controls */}
             <Card
-                title={
-                    <Space>
-                        <VideoCameraOutlined style={{ color: '#7c3aed' }} />
-                        <Text strong>Recording Controls</Text>
-                    </Space>
-                }
                 style={{ marginBottom: 24 }}
             >
-                <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                    {/* Status */}
+                <div style={{ textAlign: 'center', padding: '32px 0' }}>
                     <div style={{ marginBottom: 24 }}>
                         {getStateTag()}
                     </div>
 
-                    {/* Timer Display */}
                     <div style={{
-                        fontSize: 64,
-                        fontWeight: 'bold',
-                        color: status.state === 'recording' ? '#ef4444' : '#4c1d95',
-                        fontFamily: 'monospace',
-                        marginBottom: 24
+                        fontSize: 56,
+                        fontWeight: 600,
+                        color: status.state === 'recording' ? '#dc2626' : '#171717',
+                        fontFamily: 'SF Mono, Monaco, Consolas, monospace',
+                        marginBottom: 32,
+                        letterSpacing: '-1px'
                     }}>
-                        <ClockCircleOutlined style={{ marginRight: 12, fontSize: 48 }} />
                         {formatDuration(status.duration)}
                     </div>
 
-                    {/* Recording Animation */}
                     {status.state === 'recording' && (
-                        <div style={{ marginBottom: 24 }}>
-                            <Progress
-                                type="circle"
-                                percent={100}
-                                status="active"
-                                strokeColor="#ef4444"
-                                format={() => (
-                                    <div style={{ color: '#ef4444' }}>
-                                        <VideoCameraOutlined style={{ fontSize: 32 }} />
-                                    </div>
-                                )}
-                            />
+                        <div style={{ marginBottom: 32 }}>
+                            <div style={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: 2,
+                                background: '#dc2626',
+                                display: 'inline-block',
+                                marginRight: 8
+                            }} />
+                            <Text type="secondary">Recording in progress</Text>
                         </div>
                     )}
 
-                    {/* Control Buttons */}
                     <Space size="large">
                         {status.state === 'idle' ? (
                             <Button
@@ -238,14 +225,7 @@ const Recording: React.FC = () => {
                                 icon={<PlayCircleOutlined />}
                                 loading={isLoading}
                                 onClick={handleStartRecording}
-                                style={{
-                                    backgroundColor: '#7c3aed',
-                                    borderColor: '#7c3aed',
-                                    height: 56,
-                                    paddingLeft: 32,
-                                    paddingRight: 32,
-                                    fontSize: 18
-                                }}
+                                className="h-14 px-8 text-base font-medium"
                             >
                                 Start Recording
                             </Button>
@@ -257,12 +237,7 @@ const Recording: React.FC = () => {
                                 icon={<PauseCircleOutlined />}
                                 loading={isLoading}
                                 onClick={handleStopRecording}
-                                style={{
-                                    height: 56,
-                                    paddingLeft: 32,
-                                    paddingRight: 32,
-                                    fontSize: 18
-                                }}
+                                className="h-14 px-8 text-base font-medium"
                             >
                                 Stop Recording
                             </Button>
@@ -271,12 +246,7 @@ const Recording: React.FC = () => {
                                 size="large"
                                 disabled
                                 icon={<LoadingOutlined spin />}
-                                style={{
-                                    height: 56,
-                                    paddingLeft: 32,
-                                    paddingRight: 32,
-                                    fontSize: 18
-                                }}
+                                className="h-14 px-8 text-base"
                             >
                                 Processing...
                             </Button>
@@ -285,19 +255,11 @@ const Recording: React.FC = () => {
                 </div>
             </Card>
 
-            {/* Last Recording Info */}
             {lastSavedPath && (
-                <Card
-                    title={
-                        <Space>
-                            <CheckCircleOutlined style={{ color: '#22c55e' }} />
-                            <Text strong>Last Recording</Text>
-                        </Space>
-                    }
-                >
+                <Card>
                     <Space direction="vertical" style={{ width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <FolderOpenOutlined style={{ color: '#7c3aed' }} />
+                            <CheckCircleOutlined style={{ color: '#16a34a' }} />
                             <Text strong>Saved to:</Text>
                         </div>
                         <Text
@@ -307,7 +269,8 @@ const Recording: React.FC = () => {
                                 padding: 12,
                                 backgroundColor: '#f5f5f5',
                                 borderRadius: 6,
-                                wordBreak: 'break-all'
+                                wordBreak: 'break-all',
+                                fontSize: 13
                             }}
                         >
                             {lastSavedPath}
@@ -316,9 +279,8 @@ const Recording: React.FC = () => {
                 </Card>
             )}
 
-            {/* Error Display */}
             {status.error && (
-                <Card style={{ marginTop: 16, borderColor: '#ef4444' }}>
+                <Card style={{ marginTop: 16, borderColor: '#dc2626' }}>
                     <Text type="danger">{status.error}</Text>
                 </Card>
             )}

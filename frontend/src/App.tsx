@@ -11,10 +11,11 @@ import Activity from './pages/Activity';
 
 const theme = {
     token: {
-        colorPrimary: '#7c3aed',
-        colorLink: '#7c3aed',
-        colorLinkHover: '#6d28d9',
-        borderRadius: 6,
+        colorPrimary: '#2851e6',
+        colorLink: '#2851e6',
+        colorLinkHover: '#213fc9',
+        borderRadius: 8,
+        fontFamily: '-apple-system, BlinkMacSystemFont, SF Pro Display, Segoe UI, Roboto, sans-serif',
     },
 };
 

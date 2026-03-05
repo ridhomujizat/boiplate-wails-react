@@ -9,18 +9,71 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ant Design overrides for clean white & dark purple theme */
+/* Ant Design overrides for minimalist theme */
 .ant-layout-sider {
-  background: #4c1d95 !important;
+  background: #171717 !important;
 }
 
 .ant-menu-dark {
-  background: #4c1d95 !important;
+  background: #171717 !important;
 }
 
 .ant-menu-dark .ant-menu-item-selected {
-  background: #7c3aed !important;
+  background: #262626 !important;
+}
+
+.ant-menu-dark .ant-menu-item-selected .ant-menu-title-content {
+  color: #ffffff !important;
+}
+
+.ant-btn-primary {
+  background-color: #2851e6 !important;
+  border-color: #2851e6 !important;
+}
+
+.ant-btn-primary:hover {
+  background-color: #213fc9 !important;
+  border-color: #213fc9 !important;
+}
+
+.ant-card {
+  border-radius: 12px;
+  border: 1px solid #e5e5e5;
+}
+
+.ant-input-affix-wrapper,
+.ant-input {
+  border-radius: 8px;
+}
+
+.ant-modal-content {
+  border-radius: 12px;
+}
+
+.ant-statistic-title {
+  font-size: 13px;
+  color: #737373;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ant-statistic-content {
+  font-size: 28px;
+  font-weight: 600;
+  color: #171717;
+}
+
+.ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+  color: #404040;
+}
+
+.ant-progress-bg {
+  border-radius: 2px;
 }

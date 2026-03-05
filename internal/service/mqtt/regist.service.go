@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"context"
+	"log"
 	"onx-screen-record/internal/repository"
 	"onx-screen-record/internal/service/auth"
 	"onx-screen-record/internal/service/setting"
@@ -49,8 +50,11 @@ func NewService(ctx context.Context, auth auth.IService, rp repository.IReposito
 func (s *Service) setConnectionState(state string) {
 	s.connectionState = state
 	if s.ctx != nil {
+		log.Printf("[MQTT EVENT] Emitting mqtt-status event with state: %s", state)
 		runtime.EventsEmit(s.ctx, "mqtt-status", map[string]interface{}{
 			"state": state,
 		})
+	} else {
+		log.Printf("[MQTT EVENT] Context is nil, cannot emit event for state: %s", state)
 	}
 }

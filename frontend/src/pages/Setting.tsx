@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Typography, message, Space, Spin, Select, Switch, Tag, Divider, InputNumber } from 'antd';
+import { Card, Form, Input, InputNumber, Button, Typography, message, Space, Spin, Select, Switch, Tag, Divider } from 'antd';
 import {
     SettingOutlined,
     SaveOutlined,
@@ -83,16 +83,13 @@ const Setting: React.FC = () => {
     const [recordingForm] = Form.useForm<RecordingFormValues>();
     const [uploadForm] = Form.useForm<UploadFormValues>();
 
-    // Permission states
     const [permissions, setPermissions] = useState<PermissionState>({
         screen: { granted: false, message: 'Checking...' },
         accessibility: { granted: false, message: 'Checking...' }
     });
 
-    // Audio devices
     const [microphones, setMicrophones] = useState<app.AudioDevice[]>([]);
 
-    // Load settings on component mount
     useEffect(() => {
         loadSettings();
         checkPermissions();
@@ -249,7 +246,6 @@ const Setting: React.FC = () => {
     const handleRecordingSave = async (values: RecordingFormValues) => {
         setRecordingLoading(true);
         try {
-            // Use default value when disabled to avoid validation issues
             const seconds = values.maxRecordingTimeEnabled ? values.maxRecordingTimeSeconds : 3600;
 
             const result = await SaveRecordingSettings({
@@ -294,7 +290,6 @@ const Setting: React.FC = () => {
         try {
             await RequestScreenPermission();
             message.info('Opening System Preferences...');
-            // Re-check permissions after a short delay
             setTimeout(checkPermissions, 2000);
         } catch (error) {
             console.error('Failed to request screen permission:', error);
@@ -305,7 +300,6 @@ const Setting: React.FC = () => {
         try {
             await RequestAccessibilityPermission();
             message.info('Opening System Preferences...');
-            // Re-check permissions after a short delay
             setTimeout(checkPermissions, 2000);
         } catch (error) {
             console.error('Failed to request accessibility permission:', error);
@@ -315,37 +309,34 @@ const Setting: React.FC = () => {
     if (initialLoading) {
         return (
             <div className="p-6 flex justify-center items-center" style={{ minHeight: 400 }}>
-                <Spin indicator={<LoadingOutlined style={{ fontSize: 48, color: '#7c3aed' }} spin />} />
+                <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
             </div>
         );
     }
 
     return (
         <div className="p-6" style={{ maxWidth: 800 }}>
-            <Title level={2} style={{ color: '#4c1d95', marginBottom: 24 }}>
+            <Title level={2} style={{ color: '#171717', marginBottom: 24, fontWeight: 600 }}>
                 <SettingOutlined style={{ marginRight: 12 }} />
                 Settings
             </Title>
 
-            {/* Permissions Section */}
             <Card
                 title={
                     <Space>
-                        <SafetyCertificateOutlined style={{ color: '#7c3aed' }} />
+                        <SafetyCertificateOutlined />
                         <Text strong>Permissions</Text>
                     </Space>
                 }
                 style={{ marginBottom: 24 }}
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {/* Screen Recording Permission */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Space>
-                            <DesktopOutlined style={{ fontSize: 18, color: '#7c3aed' }} />
+                            <DesktopOutlined style={{ fontSize: 18 }} />
                             <div>
-                                <Text strong>Screen Recording</Text>
-                                <br />
-                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                <Text strong style={{ display: 'block', color: '#171717' }}>Screen Recording</Text>
+                                <Text type="secondary" style={{ fontSize: 13 }}>
                                     Required to capture screen content
                                 </Text>
                             </div>
@@ -362,7 +353,7 @@ const Setting: React.FC = () => {
                                     type="primary"
                                     size="small"
                                     onClick={handleRequestScreenPermission}
-                                    style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed' }}
+                                    className="font-medium"
                                 >
                                     Request
                                 </Button>
@@ -372,14 +363,12 @@ const Setting: React.FC = () => {
 
                     <Divider style={{ margin: '8px 0' }} />
 
-                    {/* Accessibility Permission */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Space>
-                            <SafetyCertificateOutlined style={{ fontSize: 18, color: '#7c3aed' }} />
+                            <SafetyCertificateOutlined style={{ fontSize: 18 }} />
                             <div>
-                                <Text strong>Accessibility</Text>
-                                <br />
-                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                <Text strong style={{ display: 'block', color: '#171717' }}>Accessibility</Text>
+                                <Text type="secondary" style={{ fontSize: 13 }}>
                                     Required for advanced features
                                 </Text>
                             </div>
@@ -396,7 +385,7 @@ const Setting: React.FC = () => {
                                     type="primary"
                                     size="small"
                                     onClick={handleRequestAccessibilityPermission}
-                                    style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed' }}
+                                    className="font-medium"
                                 >
                                     Request
                                 </Button>
@@ -406,11 +395,10 @@ const Setting: React.FC = () => {
                 </div>
             </Card>
 
-            {/* Audio Settings Section */}
             <Card
                 title={
                     <Space>
-                        <AudioOutlined style={{ color: '#7c3aed' }} />
+                        <AudioOutlined />
                         <Text strong>Audio Settings</Text>
                     </Space>
                 }
@@ -428,8 +416,8 @@ const Setting: React.FC = () => {
                     <Form.Item
                         label={
                             <Space>
-                                <AudioOutlined style={{ color: '#7c3aed' }} />
-                                <span>Microphone</span>
+                                <AudioOutlined />
+                                <span className="font-medium">Microphone</span>
                             </Space>
                         }
                         name="microphoneId"
@@ -450,8 +438,8 @@ const Setting: React.FC = () => {
                     <Form.Item
                         label={
                             <Space>
-                                <SoundOutlined style={{ color: '#7c3aed' }} />
-                                <span>System Audio</span>
+                                <SoundOutlined />
+                                <span className="font-medium">System Audio</span>
                             </Space>
                         }
                         name="systemAudioEnabled"
@@ -470,10 +458,7 @@ const Setting: React.FC = () => {
                             icon={<SaveOutlined />}
                             loading={audioLoading}
                             size="large"
-                            style={{
-                                backgroundColor: '#7c3aed',
-                                borderColor: '#7c3aed'
-                            }}
+                            className="font-medium"
                         >
                             Save Audio Settings
                         </Button>
@@ -481,11 +466,10 @@ const Setting: React.FC = () => {
                 </Form>
             </Card>
 
-            {/* Recording Settings Section */}
             <Card
                 title={
                     <Space>
-                        <VideoCameraOutlined style={{ color: '#7c3aed' }} />
+                        <VideoCameraOutlined />
                         <Text strong>Recording Settings</Text>
                     </Space>
                 }
@@ -503,8 +487,8 @@ const Setting: React.FC = () => {
                     <Form.Item
                         label={
                             <Space>
-                                <FieldTimeOutlined style={{ color: '#7c3aed' }} />
-                                <span>Maximum Recording Time</span>
+                                <FieldTimeOutlined />
+                                <span className="font-medium">Maximum Recording Time</span>
                             </Space>
                         }
                         name="maxRecordingTimeEnabled"
@@ -523,8 +507,8 @@ const Setting: React.FC = () => {
                                 <Form.Item
                                     label={
                                         <Space>
-                                            <FieldTimeOutlined style={{ color: '#7c3aed' }} />
-                                            <span>Duration (seconds)</span>
+                                            <FieldTimeOutlined />
+                                            <span className="font-medium">Duration (seconds)</span>
                                         </Space>
                                     }
                                     name="maxRecordingTimeSeconds"
@@ -555,10 +539,7 @@ const Setting: React.FC = () => {
                             icon={<SaveOutlined />}
                             loading={recordingLoading}
                             size="large"
-                            style={{
-                                backgroundColor: '#7c3aed',
-                                borderColor: '#7c3aed'
-                            }}
+                            className="font-medium"
                         >
                             Save Recording Settings
                         </Button>
@@ -566,11 +547,10 @@ const Setting: React.FC = () => {
                 </Form>
             </Card>
 
-            {/* Upload Settings Section */}
             <Card
                 title={
                     <Space>
-                        <CloudUploadOutlined style={{ color: '#7c3aed' }} />
+                        <CloudUploadOutlined />
                         <Text strong>Upload Settings</Text>
                     </Space>
                 }
@@ -587,8 +567,8 @@ const Setting: React.FC = () => {
                     <Form.Item
                         label={
                             <Space>
-                                <DeleteOutlined style={{ color: '#7c3aed' }} />
-                                <span>Delete file after upload</span>
+                                <DeleteOutlined />
+                                <span className="font-medium">Delete file after upload</span>
                             </Space>
                         }
                         name="deleteAfterUpload"
@@ -608,10 +588,7 @@ const Setting: React.FC = () => {
                             icon={<SaveOutlined />}
                             loading={uploadLoading}
                             size="large"
-                            style={{
-                                backgroundColor: '#7c3aed',
-                                borderColor: '#7c3aed'
-                            }}
+                            className="font-medium"
                         >
                             Save Upload Settings
                         </Button>
@@ -619,11 +596,10 @@ const Setting: React.FC = () => {
                 </Form>
             </Card>
 
-            {/* Activity Tracking Section */}
             <Card
                 title={
                     <Space>
-                        <FieldTimeOutlined style={{ color: '#7c3aed' }} />
+                        <FieldTimeOutlined />
                         <Text strong>Activity Tracking</Text>
                     </Space>
                 }
@@ -641,8 +617,8 @@ const Setting: React.FC = () => {
                     <Form.Item
                         label={
                             <Space>
-                                <FieldTimeOutlined style={{ color: '#7c3aed' }} />
-                                <span>Polling Interval</span>
+                                <FieldTimeOutlined />
+                                <span className="font-medium">Polling Interval</span>
                             </Space>
                         }
                         name="pollingInterval"
@@ -661,8 +637,8 @@ const Setting: React.FC = () => {
                     <Form.Item
                         label={
                             <Space>
-                                <DesktopOutlined style={{ color: '#7c3aed' }} />
-                                <span>AFK Threshold</span>
+                                <DesktopOutlined />
+                                <span className="font-medium">AFK Threshold</span>
                             </Space>
                         }
                         name="afkThreshold"
@@ -685,10 +661,7 @@ const Setting: React.FC = () => {
                             icon={<SaveOutlined />}
                             loading={activityLoading}
                             size="large"
-                            style={{
-                                backgroundColor: '#7c3aed',
-                                borderColor: '#7c3aed'
-                            }}
+                            className="font-medium"
                         >
                             Save Activity Settings
                         </Button>
@@ -696,11 +669,10 @@ const Setting: React.FC = () => {
                 </Form>
             </Card>
 
-            {/* Configuration Section */}
             <Card
                 title={
                     <Space>
-                        <CloudServerOutlined style={{ color: '#7c3aed' }} />
+                        <CloudServerOutlined />
                         <Text strong>Configuration</Text>
                     </Space>
                 }
@@ -718,8 +690,8 @@ const Setting: React.FC = () => {
                     <Form.Item
                         label={
                             <Space>
-                                <BankOutlined style={{ color: '#7c3aed' }} />
-                                <span>Tenant Code</span>
+                                <BankOutlined />
+                                <span className="font-medium">Tenant Code</span>
                             </Space>
                         }
                         name="tenantCode"
@@ -734,8 +706,8 @@ const Setting: React.FC = () => {
                     <Form.Item
                         label={
                             <Space>
-                                <GlobalOutlined style={{ color: '#7c3aed' }} />
-                                <span>Base URL</span>
+                                <GlobalOutlined />
+                                <span className="font-medium">Base URL</span>
                             </Space>
                         }
                         name="baseUrl"
@@ -753,8 +725,8 @@ const Setting: React.FC = () => {
                     <Form.Item
                         label={
                             <Space>
-                                <CloudServerOutlined style={{ color: '#7c3aed' }} />
-                                <span>MQTT Broker</span>
+                                <CloudServerOutlined />
+                                <span className="font-medium">MQTT Broker</span>
                             </Space>
                         }
                         name="mqttBroker"
@@ -773,10 +745,7 @@ const Setting: React.FC = () => {
                             icon={<SaveOutlined />}
                             loading={loading}
                             size="large"
-                            style={{
-                                backgroundColor: '#7c3aed',
-                                borderColor: '#7c3aed'
-                            }}
+                            className="font-medium"
                         >
                             Save Settings
                         </Button>

@@ -48,7 +48,6 @@ const Home: React.FC = () => {
     useEffect(() => {
         fetchMQTTStatus();
 
-        // Listen for real-time MQTT status changes from backend
         const unsubscribeStatus = EventsOn('mqtt-status', (data: { state: string }) => {
             const state = data.state as ConnectionState;
             setConnectionState(state);
@@ -71,35 +70,34 @@ const Home: React.FC = () => {
         return 'Good Evening';
     };
 
-    // Get styling based on connection state
     const getConnectionStyle = () => {
         switch (connectionState) {
             case 'connected':
                 return {
-                    background: '#f6ffed',
-                    border: '2px solid #b7eb8f',
-                    iconBg: '#f6ffed',
-                    iconColor: '#52c41a',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    iconBg: '#dcfce7',
+                    iconColor: '#16a34a',
                     badgeStatus: 'success' as const,
                     badgeText: 'Connected',
                     message: 'Your device is connected with system.'
                 };
             case 'connecting':
                 return {
-                    background: '#fffbe6',
-                    border: '2px solid #ffe58f',
-                    iconBg: '#fffbe6',
-                    iconColor: '#faad14',
+                    background: '#fefce8',
+                    border: '1px solid #fef08a',
+                    iconBg: '#fef9c3',
+                    iconColor: '#ca8a04',
                     badgeStatus: 'processing' as const,
                     badgeText: 'Connecting...',
                     message: 'Establishing connection with system...'
                 };
             case 'reconnecting':
                 return {
-                    background: '#fffbe6',
-                    border: '2px solid #ffe58f',
-                    iconBg: '#fffbe6',
-                    iconColor: '#faad14',
+                    background: '#fefce8',
+                    border: '1px solid #fef08a',
+                    iconBg: '#fef9c3',
+                    iconColor: '#ca8a04',
                     badgeStatus: 'processing' as const,
                     badgeText: 'Reconnecting...',
                     message: 'Connection lost. Reconnecting to system...'
@@ -107,10 +105,10 @@ const Home: React.FC = () => {
             case 'disconnected':
             default:
                 return {
-                    background: '#fff1f0',
-                    border: '2px solid #ffccc7',
-                    iconBg: '#fff1f0',
-                    iconColor: '#ff4d4f',
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    iconBg: '#fee2e2',
+                    iconColor: '#dc2626',
                     badgeStatus: 'error' as const,
                     badgeText: 'Not Connected',
                     message: 'Your device is not connected with system.'
@@ -120,34 +118,31 @@ const Home: React.FC = () => {
 
     const style = getConnectionStyle();
 
-    // Get icon based on connection state
     const getStatusIcon = () => {
         switch (connectionState) {
             case 'connected':
-                return <CheckCircleOutlined style={{ fontSize: 32, color: '#52c41a' }} />;
+                return <CheckCircleOutlined style={{ fontSize: 28, color: '#16a34a' }} />;
             case 'connecting':
             case 'reconnecting':
-                return <LoadingOutlined style={{ fontSize: 32, color: '#faad14' }} spin />;
+                return <LoadingOutlined style={{ fontSize: 28, color: '#ca8a04' }} spin />;
             case 'disconnected':
             default:
-                return <CloseCircleOutlined style={{ fontSize: 32, color: '#ff4d4f' }} />;
+                return <CloseCircleOutlined style={{ fontSize: 28, color: '#dc2626' }} />;
         }
     };
 
     return (
         <div className="p-6">
-            {/* Welcome Section */}
             <div style={{ marginBottom: 32 }}>
-                <Title level={2} style={{ color: '#4c1d95', marginBottom: 8 }}>
+                <Title level={2} style={{ color: '#171717', marginBottom: 8, fontWeight: 600 }}>
                     {getGreeting()}{user?.email ? `, ${user.email.split('@')[0]}` : ''}!
                 </Title>
-                <Text type="secondary" style={{ fontSize: 16 }}>
+                <Text type="secondary" style={{ fontSize: 15 }}>
                     Welcome to ONX Screen Record
                 </Text>
             </div>
 
             <Row gutter={[24, 24]}>
-                {/* Connection Status Card */}
                 <Col xs={24} md={24}>
                     <Card
                         style={{
@@ -158,11 +153,11 @@ const Home: React.FC = () => {
                         }}
                     >
                         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                                 <div style={{
                                     width: 48,
                                     height: 48,
-                                    borderRadius: 12,
+                                    borderRadius: 10,
                                     background: style.iconBg,
                                     display: 'flex',
                                     alignItems: 'center',
@@ -170,29 +165,29 @@ const Home: React.FC = () => {
                                 }}>
                                     <CloudOutlined
                                         style={{
-                                            fontSize: 24,
+                                            fontSize: 22,
                                             color: style.iconColor
                                         }}
                                     />
                                 </div>
                                 <div style={{ flex: 1 }}>
-                                    <Text strong style={{ fontSize: 18, display: 'block' }}>
-                                        Connection
+                                    <Text strong style={{ fontSize: 16, display: 'block', color: '#171717' }}>
+                                        Connection Status
                                     </Text>
                                     <Badge
                                         status={style.badgeStatus}
                                         text={style.badgeText}
-                                        style={{ fontSize: 14 }}
+                                        style={{ fontSize: 13 }}
                                     />
                                 </div>
                                 {getStatusIcon()}
                             </div>
                             <div style={{
-                                padding: 16,
+                                padding: 14,
                                 borderRadius: 8,
-                                background: 'rgba(255, 255, 255, 0.8)'
+                                background: 'rgba(255, 255, 255, 0.6)'
                             }}>
-                                <Text style={{ color: style.iconColor }}>
+                                <Text style={{ color: style.iconColor, fontSize: 14 }}>
                                     {style.message}
                                 </Text>
                             </div>
