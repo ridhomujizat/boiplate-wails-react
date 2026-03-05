@@ -189,81 +189,81 @@ func (s *Service) DeepLinkAuth(email string, token string) (dto.DeepLinkAuthResp
 
 // Logout performs user logout via API
 func (s *Service) Logout(token string) (dto.LogoutResponse, error) {
-	// // Get device ID
-	// deviceID, err := helper.GetDeviceID()
-	// if err != nil {
-	// 	logger.Error.Printf("Failed to get device ID: %v", err)
-	// 	return dto.LogoutResponse{
-	// 		Message: "Failed to get device ID",
-	// 		Success: false,
-	// 	}, err
-	// }
+	// Get device ID
+	deviceID, err := helper.GetDeviceID()
+	if err != nil {
+		logger.Error.Printf("Failed to get device ID: %v", err)
+		return dto.LogoutResponse{
+			Message: "Failed to get device ID",
+			Success: false,
+		}, err
+	}
 
-	// // Get baseurl from settings
-	// baseURL, err := s.getBaseURL()
-	// if err != nil {
-	// 	logger.Error.Printf("Failed to get settings: %v", err)
-	// 	return dto.LogoutResponse{
-	// 		Message: "Failed to get settings",
-	// 		Success: false,
-	// 	}, err
-	// }
+	// Get baseurl from settings
+	baseURL, err := s.getBaseURL()
+	if err != nil {
+		logger.Error.Printf("Failed to get settings: %v", err)
+		return dto.LogoutResponse{
+			Message: "Failed to get settings",
+			Success: false,
+		}, err
+	}
 
-	// if baseURL == "" {
-	// 	return dto.LogoutResponse{
-	// 		Message: "BaseUrl not configured",
-	// 		Success: false,
-	// 	}, nil
-	// }
+	if baseURL == "" {
+		return dto.LogoutResponse{
+			Message: "BaseUrl not configured",
+			Success: false,
+		}, nil
+	}
 
-	// // Prepare logout request
-	// logoutReq := dto.LogoutRequest{
-	// 	Token:    token,
-	// 	DeviceID: deviceID,
-	// }
+	// Prepare logout request
+	logoutReq := dto.LogoutRequest{
+		Token:    token,
+		DeviceID: deviceID,
+	}
 
-	// // Build API URL
-	// apiURL := baseURL + "/api/auth/logout"
+	// Build API URL
+	apiURL := baseURL + "/api/auth/logout"
 
-	// headers := http.Header{
-	// 	"Content-Type":  []string{"application/json"},
-	// 	"Authorization": []string{"Bearer " + token},
-	// }
+	headers := http.Header{
+		"Content-Type":  []string{"application/json"},
+		"Authorization": []string{"Bearer " + token},
+	}
 
-	// response, err := helper.HTTPRequest(&helper.HTTPRequestPayload{
-	// 	Method: enum.POST,
-	// 	URL:    apiURL,
-	// 	Body:   logoutReq,
-	// },
-	// 	&helper.HTTPRequestConfig{
-	// 		Headers: headers,
-	// 		Ctx:     s.getContext(),
-	// 	})
-	// if err != nil {
-	// 	return dto.LogoutResponse{
-	// 		Message: "Failed to logout",
-	// 		Success: false,
-	// 	}, fmt.Errorf("failed post logout: %w", err)
-	// }
+	response, err := helper.HTTPRequest(&helper.HTTPRequestPayload{
+		Method: enum.POST,
+		URL:    apiURL,
+		Body:   logoutReq,
+	},
+		&helper.HTTPRequestConfig{
+			Headers: headers,
+			Ctx:     s.getContext(),
+		})
+	if err != nil {
+		return dto.LogoutResponse{
+			Message: "Failed to logout",
+			Success: false,
+		}, fmt.Errorf("failed post logout: %w", err)
+	}
 
-	// // Parse response
-	// jsonBytes, err := helper.JSONToByte(response.Data)
-	// if err != nil {
-	// 	logger.Error.Printf("Failed to parse response: %v", err)
-	// 	return dto.LogoutResponse{
-	// 		Message: "Failed to parse response",
-	// 		Success: false,
-	// 	}, err
-	// }
+	// Parse response
+	jsonBytes, err := helper.JSONToByte(response.Data)
+	if err != nil {
+		logger.Error.Printf("Failed to parse response: %v", err)
+		return dto.LogoutResponse{
+			Message: "Failed to parse response",
+			Success: false,
+		}, err
+	}
 
 	var logoutResp dto.LogoutResponse
-	// if err := helper.JSONByteToStruct(jsonBytes, &logoutResp); err != nil {
-	// 	logger.Error.Printf("Failed to unmarshal response: %v", err)
-	// 	return dto.LogoutResponse{
-	// 		Message: "Failed to parse response data",
-	// 		Success: false,
-	// 	}, err
-	// }
+	if err := helper.JSONByteToStruct(jsonBytes, &logoutResp); err != nil {
+		logger.Error.Printf("Failed to unmarshal response: %v", err)
+		return dto.LogoutResponse{
+			Message: "Failed to parse response data",
+			Success: false,
+		}, err
+	}
 
 	logger.Info.Printf("User logged out successfully")
 	return logoutResp, nil

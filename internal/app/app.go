@@ -519,6 +519,9 @@ func (a *App) Logout(token string) interface{} {
 		logger.Info.Printf("MQTT disconnected")
 	}
 
+	// Clear stored auth token
+	a.authToken = ""
+
 	response, err := a.auth.Logout(token)
 	if err != nil {
 		logger.Error.Printf("Logout error: %v", err)
