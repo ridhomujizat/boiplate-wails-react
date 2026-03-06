@@ -9,11 +9,64 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
 )
 
 // stdinPipe holds the stdin pipe for FFmpeg process
 var ffmpegStdin io.WriteCloser
+
+func ffmpegCommand(args ...string) (*exec.Cmd, error) {
+	if envPath := os.Getenv("FFMPEG_PATH"); envPath != "" {
+		if fileExists(envPath) {
+			return newHiddenCommand(envPath, args...), nil
+		}
+	}
+
+	if exePath, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exePath)
+		candidate := filepath.Join(exeDir, "ffmpeg.exe")
+		if fileExists(candidate) {
+			return newHiddenCommand(candidate, args...), nil
+		}
+	}
+
+	if cwd, err := os.Getwd(); err == nil {
+		candidate := filepath.Join(cwd, "ffmpeg.exe")
+		if fileExists(candidate) {
+			return newHiddenCommand(candidate, args...), nil
+		}
+		candidate = filepath.Join(cwd, "assets", "ffmpeg.exe")
+		if fileExists(candidate) {
+			return newHiddenCommand(candidate, args...), nil
+		}
+		// Dev fallback: repo asset name without extension
+		candidate = filepath.Join(cwd, "assets", "ffmpeg")
+		if fileExists(candidate) {
+			return newHiddenCommand(candidate, args...), nil
+		}
+	}
+
+	if p, err := exec.LookPath("ffmpeg"); err == nil {
+		return newHiddenCommand(p, args...), nil
+	}
+
+	return nil, fmt.Errorf("ffmpeg not found: set FFMPEG_PATH or place ffmpeg.exe next to the app")
+}
+
+func newHiddenCommand(binaryPath string, args ...string) *exec.Cmd {
+	cmd := exec.Command(binaryPath, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	return cmd
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
+}
 
 // StartRecording starts screen and audio recording on Windows
 func (r *RecorderManager) StartRecording() error {
@@ -43,7 +96,7 @@ func (r *RecorderManager) StartRecording() error {
 
 	// Start FFmpeg screen capture using gdigrab
 	scaleFilter := fmt.Sprintf("scale=%d:%d", width, height)
-	screenCmd := exec.Command("ffmpeg",
+	screenCmd, err := ffmpegCommand(
 		"-f", "gdigrab",
 		"-framerate", "15",
 		"-i", "desktop",
@@ -55,6 +108,9 @@ func (r *RecorderManager) StartRecording() error {
 		"-y",
 		r.tempVideoPath,
 	)
+	if err != nil {
+		return fmt.Errorf("failed to locate ffmpeg: %w", err)
+	}
 
 	// Redirect stderr to suppress FFmpeg output
 	screenCmd.Stderr = nil
@@ -217,7 +273,7 @@ func (r *RecorderManager) StopRecording() (string, error) {
 
 // muxVideoAudio combines video and audio using FFmpeg
 func (r *RecorderManager) muxVideoAudio(videoPath, audioPath, outputPath string) error {
-	cmd := exec.Command("ffmpeg",
+	cmd, err := ffmpegCommand(
 		"-i", videoPath,
 		"-i", audioPath,
 		"-c:v", "copy",
@@ -226,6 +282,9 @@ func (r *RecorderManager) muxVideoAudio(videoPath, audioPath, outputPath string)
 		"-y",
 		outputPath,
 	)
+	if err != nil {
+		return fmt.Errorf("failed to locate ffmpeg: %w", err)
+	}
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to mux video and audio: %w", err)
@@ -237,7 +296,7 @@ func (r *RecorderManager) muxVideoAudio(videoPath, audioPath, outputPath string)
 // mixAudioFiles mixes two audio files into one using FFmpeg's amix filter
 func (r *RecorderManager) mixAudioFiles(audio1Path, audio2Path, outputPath string) error {
 	// Use FFmpeg amix filter to mix both audio streams
-	cmd := exec.Command("ffmpeg",
+	cmd, err := ffmpegCommand(
 		"-i", audio1Path,
 		"-i", audio2Path,
 		"-filter_complex", "amix=inputs=2:duration=longest:dropout_transition=0",
@@ -245,6 +304,9 @@ func (r *RecorderManager) mixAudioFiles(audio1Path, audio2Path, outputPath strin
 		"-y",
 		outputPath,
 	)
+	if err != nil {
+		return fmt.Errorf("failed to locate ffmpeg: %w", err)
+	}
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to mix audio files: %w", err)
@@ -280,7 +342,7 @@ func convertToWebM(inputPath string) string {
 
 	// Convert using FFmpeg with VP9 video codec and Opus audio codec
 	// Using higher CRF (40) for better compression while maintaining text readability
-	cmd := exec.Command("ffmpeg",
+	cmd, err := ffmpegCommand(
 		"-i", inputPath,
 		"-c:v", "libvpx-vp9",
 		"-crf", "40",
@@ -290,6 +352,9 @@ func convertToWebM(inputPath string) string {
 		"-y",
 		webmPath,
 	)
+	if err != nil {
+		return ""
+	}
 
 	// Suppress FFmpeg output
 	cmd.Stderr = nil

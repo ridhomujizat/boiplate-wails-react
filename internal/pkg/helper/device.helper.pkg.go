@@ -2,7 +2,6 @@ package helper
 
 import (
 	"fmt"
-	"os/exec"
 	"runtime"
 	"strings"
 )
@@ -11,7 +10,7 @@ import (
 func GetDeviceID() (string, error) {
 	switch runtime.GOOS {
 	case "windows":
-		cmd := exec.Command("powershell", "-Command", "(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography').MachineGuid")
+		cmd := newSystemCommand("powershell", "-Command", "(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography').MachineGuid")
 		out, err := cmd.Output()
 		if err != nil {
 			return "", err
@@ -19,7 +18,7 @@ func GetDeviceID() (string, error) {
 		return strings.TrimSpace(string(out)), nil
 
 	case "darwin":
-		cmd := exec.Command("bash", "-c", "ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/ { print $3; }'")
+		cmd := newSystemCommand("bash", "-c", "ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/ { print $3; }'")
 		out, err := cmd.Output()
 		if err != nil {
 			return "", err
@@ -28,7 +27,7 @@ func GetDeviceID() (string, error) {
 		return result, nil
 
 	case "linux":
-		cmd := exec.Command("cat", "/etc/machine-id")
+		cmd := newSystemCommand("cat", "/etc/machine-id")
 		out, err := cmd.Output()
 		if err != nil {
 			return "", err

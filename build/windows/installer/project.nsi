@@ -87,6 +87,8 @@ Section
     SetOutPath $INSTDIR
 
     !insertmacro wails.files
+    # Bundle Windows ffmpeg binary from repo assets (installed alongside app executable)
+    File "..\..\..\assets\ffmpeg.exe"
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
@@ -100,8 +102,14 @@ SectionEnd
 Section "uninstall"
     !insertmacro wails.setShellContext
 
+    # Force-stop running app (including child processes) to avoid locked files on uninstall
+    DetailPrint "Stopping running application processes..."
+    ExecWait 'taskkill /F /T /IM "${PRODUCT_EXECUTABLE}"' $0
+    Sleep 1000
+
     RMDir /r "$AppData\${PRODUCT_EXECUTABLE}" # Remove the WebView2 DataPath
 
+    Delete "$INSTDIR\ffmpeg.exe"
     RMDir /r $INSTDIR
 
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
