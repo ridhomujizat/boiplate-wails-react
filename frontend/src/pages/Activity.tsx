@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Row, Col, Statistic, Typography, Table, Progress, DatePicker, Button, Space, Tooltip } from 'antd';
+import { Card, Row, Col, Typography, Table, Progress, DatePicker, Button, Space, Tooltip, Empty } from 'antd';
 import {
     ClockCircleOutlined,
     AppstoreOutlined,
@@ -7,7 +7,9 @@ import {
     PauseCircleOutlined,
     ReloadOutlined,
     PlayCircleOutlined,
-    StopOutlined
+    StopOutlined,
+    ThunderboltOutlined,
+    DashboardOutlined
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import {
@@ -21,7 +23,7 @@ import {
 } from '../../wailsjs/go/app/App';
 import { app } from '../../wailsjs/go/models';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 type DateRange = app.DateRange;
@@ -94,25 +96,75 @@ const Activity: React.FC = () => {
     };
 
     const summaryColumns = [
-        { title: 'Application', dataIndex: 'appName', key: 'appName', ellipsis: true },
-        { title: 'Active Time', dataIndex: 'activeTime', key: 'activeTime', render: (v: number) => formatDuration(v), width: 100 },
-        { title: 'AFK Time', dataIndex: 'afkTime', key: 'afkTime', render: (v: number) => formatDuration(v), width: 100 },
-        { title: 'Sessions', dataIndex: 'sessionCount', key: 'sessionCount', width: 80 },
+        { 
+            title: 'Application', 
+            dataIndex: 'appName', 
+            key: 'appName',
+            ellipsis: true,
+            render: (text: string) => <span style={{ fontWeight: 500, color: '#171717' }}>{text}</span>
+        },
+        { 
+            title: 'Active Time', 
+            dataIndex: 'activeTime', 
+            key: 'activeTime', 
+            render: (v: number) => <span style={{ color: '#22c55e', fontWeight: 600 }}>{formatDuration(v)}</span>,
+            width: 100 
+        },
+        { 
+            title: 'AFK Time', 
+            dataIndex: 'afkTime', 
+            key: 'afkTime', 
+            render: (v: number) => <span style={{ color: '#f59e0b' }}>{formatDuration(v)}</span>,
+            width: 100 
+        },
+        { 
+            title: 'Sessions', 
+            dataIndex: 'sessionCount', 
+            key: 'sessionCount',
+            render: (v: number) => <span style={{ color: '#737373' }}>{v}</span>,
+            width: 90 
+        },
         {
             title: 'Usage',
             dataIndex: 'percentage',
             key: 'percentage',
-            width: 150,
-            render: (v: number) => <Progress percent={Math.round(v)} size="small" strokeColor="#2851e6" showInfo={false} />
+            width: 140,
+            render: (v: number) => (
+                <Progress 
+                    percent={Math.round(v)} 
+                    size="small" 
+                    strokeColor={{
+                        '0%': '#2851e6',
+                        '100%': '#1d307a',
+                    }}
+                    trailColor="#f0f0f0"
+                    showInfo={false}
+                    strokeWidth={6}
+                />
+            )
         }
     ];
 
     const getTimelineBlocks = () => {
-        if (timeline.length === 0) return null;
+        if (timeline.length === 0) {
+            return (
+                <div style={{ 
+                    padding: '40px 20px', 
+                    textAlign: 'center',
+                    background: '#fafafa',
+                    borderRadius: 8
+                }}>
+                    <Empty 
+                        image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                        description="No activity data for selected period"
+                    />
+                </div>
+            );
+        }
 
         const hourWidth = 100 / 24;
         return (
-            <div style={{ position: 'relative', height: 40, background: '#f5f5f5', borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ position: 'relative', height: 48, background: '#f5f5f5', borderRadius: 8, overflow: 'hidden' }}>
                 {timeline.map((event, idx) => {
                     const start = dayjs(event.startTime);
                     const end = event.endTime ? dayjs(event.endTime) : dayjs();
@@ -122,7 +174,15 @@ const Activity: React.FC = () => {
                     const width = Math.max(duration * hourWidth, 0.5);
 
                     return (
-                        <Tooltip key={idx} title={`${event.appName}: ${formatDuration(event.duration)}`}>
+                        <Tooltip 
+                            key={idx} 
+                            title={
+                                <div>
+                                    <div style={{ fontWeight: 600, marginBottom: 4 }}>{event.appName}</div>
+                                    <div style={{ fontSize: 12 }}>{formatDuration(event.duration)}</div>
+                                </div>
+                            }
+                        >
                             <div
                                 style={{
                                     position: 'absolute',
@@ -130,7 +190,10 @@ const Activity: React.FC = () => {
                                     width: `${width}%`,
                                     height: '100%',
                                     background: event.status === 'active' ? '#22c55e' : '#d4d4d4',
-                                    borderRight: '1px solid #ffffff'
+                                    borderRight: '1px solid #ffffff',
+                                    cursor: 'pointer',
+                                    transition: 'opacity 0.2s',
+                                    opacity: 0.85
                                 }}
                             />
                         </Tooltip>
@@ -143,117 +206,239 @@ const Activity: React.FC = () => {
     const getHourLabels = () => {
         const hours = [0, 6, 12, 18, 24];
         return (
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#a3a3a3', marginTop: 8 }}>
-                {hours.map(h => <span key={h}>{h === 24 ? '24:00' : `${h}:00`}</span>)}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#a3a3a3', marginTop: 8, fontWeight: 500 }}>
+                {hours.map(h => (
+                    <span key={h}>{h === 24 ? '24:00' : `${h.toString().padStart(2, '0')}:00`}</span>
+                ))}
             </div>
         );
     };
 
+    const StatCard = ({ title, value, icon, color, subtext }: any) => (
+        <Card style={{ borderRadius: 12, border: '1px solid #e5e5e5', boxShadow: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div>
+                    <Text style={{ fontSize: 13, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                        {title}
+                    </Text>
+                    <div style={{ fontSize: 32, fontWeight: 700, color: '#171717', marginTop: 8, letterSpacing: '-0.5px' }}>
+                        {value}
+                    </div>
+                    {subtext && (
+                        <Text style={{ fontSize: 12, color: '#a3a3a3', marginTop: 4, display: 'block' }}>
+                            {subtext}
+                        </Text>
+                    )}
+                </div>
+                <div style={{ 
+                    width: 48, 
+                    height: 48, 
+                    borderRadius: 10, 
+                    background: color + '15',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    color: color
+                }}>
+                    {icon}
+                </div>
+            </div>
+        </Card>
+    );
+
     return (
-        <div className="p-6">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <Title level={2} style={{ color: '#171717', margin: 0, fontWeight: 600 }}>Activity Monitor</Title>
-                <Space>
+        <div className="p-6" style={{ maxWidth: 1400, margin: '0 auto' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
+                <div>
+                    <Title level={2} style={{ color: '#171717', margin: 0, fontWeight: 700, fontSize: 28 }}>
+                        Activity Monitor
+                    </Title>
+                    <Text type="secondary" style={{ fontSize: 14 }}>
+                        Track and analyze your application usage
+                    </Text>
+                </div>
+                <Space size="middle">
                     <RangePicker
                         value={dateRange}
                         onChange={handleDateRangeChange}
                         allowClear={false}
+                        style={{ borderRadius: 8 }}
                     />
-                    <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>Refresh</Button>
+                    <Button 
+                        icon={<ReloadOutlined />} 
+                        onClick={fetchData} 
+                        loading={loading}
+                        size="large"
+                        style={{ borderRadius: 8 }}
+                    >
+                        Refresh
+                    </Button>
                     <Button
                         type={isTracking ? 'default' : 'primary'}
                         icon={isTracking ? <StopOutlined /> : <PlayCircleOutlined />}
                         onClick={handleToggleTracking}
                         danger={isTracking}
-                        className="font-medium"
+                        size="large"
+                        style={{ borderRadius: 8, fontWeight: 500 }}
                     >
                         {isTracking ? 'Stop Tracking' : 'Start Tracking'}
                     </Button>
                 </Space>
             </div>
 
-            <Row gutter={[16, 16]} className="mb-6">
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="Active Time"
-                            value={formatDuration(stats.totalActiveTime)}
-                            prefix={<ClockCircleOutlined style={{ color: '#22c55e' }} />}
-                            valueStyle={{ color: '#171717', fontWeight: 600 }}
-                        />
-                    </Card>
+            {/* Stats Cards */}
+            <Row gutter={[20, 20]} style={{ marginBottom: 24 }}>
+                <Col xs={24} sm={12} lg={6}>
+                    <StatCard
+                        title="Active Time"
+                        value={formatDuration(stats.totalActiveTime)}
+                        icon={<ThunderboltOutlined style={{ fontSize: 22 }} />}
+                        color="#22c55e"
+                        subtext="Time spent actively using apps"
+                    />
                 </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="AFK Time"
-                            value={formatDuration(stats.totalAfkTime)}
-                            prefix={<PauseCircleOutlined style={{ color: '#f59e0b' }} />}
-                            valueStyle={{ color: '#171717', fontWeight: 600 }}
-                        />
-                    </Card>
+                <Col xs={24} sm={12} lg={6}>
+                    <StatCard
+                        title="AFK Time"
+                        value={formatDuration(stats.totalAfkTime)}
+                        icon={<PauseCircleOutlined style={{ fontSize: 22 }} />}
+                        color="#f59e0b"
+                        subtext="Time away from keyboard"
+                    />
                 </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="Apps Used"
-                            value={stats.totalApps}
-                            prefix={<AppstoreOutlined style={{ color: '#2851e6' }} />}
-                            valueStyle={{ color: '#171717', fontWeight: 600 }}
-                        />
-                    </Card>
+                <Col xs={24} sm={12} lg={6}>
+                    <StatCard
+                        title="Apps Used"
+                        value={stats.totalApps}
+                        icon={<AppstoreOutlined style={{ fontSize: 22 }} />}
+                        color="#2851e6"
+                        subtext="Unique applications"
+                    />
                 </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <Card>
-                        <Statistic
-                            title="Most Used"
-                            value={stats.topApp || '-'}
-                            prefix={<TrophyOutlined style={{ color: '#7c3aed' }} />}
-                            valueStyle={{ color: '#171717', fontSize: 16, fontWeight: 600 }}
-                        />
-                    </Card>
+                <Col xs={24} sm={12} lg={6}>
+                    <StatCard
+                        title="Most Used"
+                        value={stats.topApp || '-'}
+                        icon={<TrophyOutlined style={{ fontSize: 22 }} />}
+                        color="#7c3aed"
+                        subtext="Top application by time"
+                    />
                 </Col>
             </Row>
 
-            <Card title="Timeline" className="mb-4" style={{ marginBottom: 16 }}>
+            {/* Timeline Section */}
+            <Card 
+                title={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <DashboardOutlined style={{ color: '#2851e6' }} />
+                        <span style={{ fontWeight: 600, color: '#171717' }}>Daily Timeline</span>
+                    </div>
+                }
+                style={{ marginBottom: 24, borderRadius: 12, border: '1px solid #e5e5e5' }}
+            >
                 {getTimelineBlocks()}
-                {getHourLabels()}
-                <div style={{ display: 'flex', gap: 20, marginTop: 16, fontSize: 13 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ display: 'inline-block', width: 10, height: 10, background: '#22c55e', borderRadius: 2 }} />
-                        <span className="text-neutral-600">Active</span>
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ display: 'inline-block', width: 10, height: 10, background: '#d4d4d4', borderRadius: 2 }} />
-                        <span className="text-neutral-600">AFK</span>
-                    </span>
-                </div>
+                {timeline.length > 0 && getHourLabels()}
+                {timeline.length > 0 && (
+                    <div style={{ display: 'flex', gap: 24, marginTop: 16, fontSize: 13 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ display: 'inline-block', width: 12, height: 12, background: '#22c55e', borderRadius: 2 }} />
+                            <span style={{ color: '#525252', fontWeight: 500 }}>Active</span>
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ display: 'inline-block', width: 12, height: 12, background: '#d4d4d4', borderRadius: 2 }} />
+                            <span style={{ color: '#525252', fontWeight: 500 }}>AFK</span>
+                        </span>
+                    </div>
+                )}
             </Card>
 
-            <Row gutter={[16, 16]}>
-                <Col xs={24} md={8}>
-                    <Card title="Top Applications">
-                        {topApps.map((app, idx) => (
-                            <div key={idx} style={{ marginBottom: 16 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                    <span style={{ fontWeight: 500, color: '#171717' }}>{app.appName}</span>
-                                    <span style={{ color: '#737373', fontSize: 13 }}>{formatDuration(app.totalDuration)}</span>
-                                </div>
-                                <Progress percent={Math.round(app.percentage)} strokeColor="#2851e6" showInfo={false} trailColor="#f5f5f5" />
+            {/* Bottom Section */}
+            <Row gutter={[20, 20]}>
+                <Col xs={24} lg={8}>
+                    <Card 
+                        title={
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <TrophyOutlined style={{ color: '#f59e0b' }} />
+                                <span style={{ fontWeight: 600, color: '#171717' }}>Top Applications</span>
                             </div>
-                        ))}
-                        {topApps.length === 0 && <div style={{ color: '#a3a3a3', textAlign: 'center', padding: '20px 0' }}>No data</div>}
+                        }
+                        style={{ borderRadius: 12, border: '1px solid #e5e5e5' }}
+                    >
+                        {topApps.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                {topApps.map((app, idx) => (
+                                    <div key={idx}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <div style={{ 
+                                                    width: 28, 
+                                                    height: 28, 
+                                                    borderRadius: 6, 
+                                                    background: idx === 0 ? '#fef3c7' : idx === 1 ? '#f3f4f6' : idx === 2 ? '#fef9c3' : '#f5f5f5',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontWeight: 700,
+                                                    fontSize: 12,
+                                                    color: idx === 0 ? '#92400e' : idx === 1 ? '#374151' : idx === 2 ? '#854d0e' : '#737373'
+                                                }}>
+                                                    {idx + 1}
+                                                </div>
+                                                <span style={{ fontWeight: 500, color: '#171717' }}>{app.appName}</span>
+                                            </div>
+                                            <span style={{ color: '#525252', fontWeight: 600, fontSize: 13 }}>
+                                                {formatDuration(app.totalDuration)}
+                                            </span>
+                                        </div>
+                                        <Progress 
+                                            percent={Math.round(app.percentage)} 
+                                            strokeColor={{
+                                                '0%': '#2851e6',
+                                                '100%': '#1d307a',
+                                            }}
+                                            trailColor="#f0f0f0"
+                                            showInfo={false}
+                                            strokeWidth={8}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <Empty 
+                                image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                                description="No application data"
+                            />
+                        )}
                     </Card>
                 </Col>
-                <Col xs={24} md={16}>
-                    <Card title="Activity Summary">
+                <Col xs={24} lg={16}>
+                    <Card 
+                        title={
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <AppstoreOutlined style={{ color: '#2851e6' }} />
+                                <span style={{ fontWeight: 600, color: '#171717' }}>Activity Summary</span>
+                            </div>
+                        }
+                        style={{ borderRadius: 12, border: '1px solid #e5e5e5' }}
+                    >
                         <Table
                             dataSource={summary}
                             columns={summaryColumns}
                             rowKey="appName"
                             pagination={false}
-                            size="small"
-                            scroll={{ y: 300 }}
+                            size="middle"
+                            scroll={{ y: 320 }}
+                            locale={{
+                                emptyText: (
+                                    <Empty 
+                                        image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                                        description="No activity summary data"
+                                        style={{ margin: '20px 0' }}
+                                    />
+                                )
+                            }}
+                            style={{ borderRadius: 8 }}
                         />
                     </Card>
                 </Col>
