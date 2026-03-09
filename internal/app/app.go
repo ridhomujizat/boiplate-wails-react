@@ -585,11 +585,6 @@ func (a *App) HandleDeepLink(deepLinkURL string) {
 	email := query.Get("email")
 	token := query.Get("token")
 
-	// Store token for API calls
-	if token != "" {
-		a.authToken = token
-	}
-
 	// Validate required parameters
 	if email == "" || token == "" {
 		logger.Error.Printf("Missing required parameters in deep link. Email: %s, Token: %s", email, token)
@@ -672,12 +667,22 @@ func (a *App) HandleDeepLink(deepLinkURL string) {
 	}
 
 	fmt.Printf("Auth Response Message: %s\n", response.Message)
-	fmt.Printf("User Data: ID=%d, Email=%s\n", response.Data.ID, response.Data.Email)
+	fmt.Printf("User Data: ID=%d, Email=%s\n", response.Data.User.ID, response.Data.User.Email)
+
+	// Store JWT token for API calls
+	if response.Data.Token != "" {
+		a.authToken = response.Data.Token
+		logger.Info.Printf("Deep link auth successful, connecting to MQTT...")
+
+		// Connect to MQTT in goroutine to avoid blocking
+		go a.connectMQTT()
+	}
 
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "deep-link-auth-success", map[string]interface{}{
 			"message": response.Message,
-			"user":    response.Data,
+			"user":    response.Data.User,
+			"token":   response.Data.Token,
 		})
 		a.ShowWindow()
 	}
@@ -722,9 +727,15 @@ func (a *App) TestDeepLinkAuth(email string, token string) interface{} {
 		}
 	}
 
+	// Store JWT token for API calls
+	if response.Data.Token != "" {
+		a.authToken = response.Data.Token
+	}
+
 	return map[string]interface{}{
 		"success": true,
 		"message": response.Message,
-		"data":    response.Data,
+		"token":   response.Data.Token,
+		"data":    response.Data.User,
 	}
 }

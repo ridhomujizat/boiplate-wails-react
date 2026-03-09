@@ -68,13 +68,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setDeepLinkLoading(true);
         });
 
-        const unsubSuccess = EventsOn('deep-link-auth-success', (data: { message: string; user: User }) => {
+        const unsubSuccess = EventsOn('deep-link-auth-success', (data: { message: string; user: User; token: string }) => {
             console.log('Deep link auth success:', data);
             setDeepLinkLoading(false);
-            if (data.user) {
+            if (data.user && data.token) {
                 setUser(data.user);
-                setToken('deep-link-token');
-                localStorage.setItem(TOKEN_KEY, 'deep-link-token');
+                setToken(data.token);
+                localStorage.setItem(TOKEN_KEY, data.token);
                 localStorage.setItem(USER_KEY, JSON.stringify(data.user));
 
                 // Connect MQTT after deep link auth

@@ -44,8 +44,8 @@ type LoginResponse struct {
 
 // DeepLinkAuthResponse represents deep link auth result from API
 type DeepLinkAuthResponse struct {
-	Data    User   `json:"data"`
-	Message string `json:"message"`
+	Data    LoginData `json:"data"`
+	Message string    `json:"message"`
 }
 
 // LogoutRequest represents the request payload for logout
