@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Login, Logout, ConnectMQTT } from '../../wailsjs/go/app/App';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
+import { useNavigate } from 'react-router-dom';
 
 interface Role {
     id: number;
@@ -44,6 +45,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [deepLinkLoading, setDeepLinkLoading] = useState(false);
+    const navigate = useNavigate();
+
+    const clearAuthState = () => {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+    };
 
     // Load token and user from localStorage on mount
     useEffect(() => {
@@ -93,12 +102,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setDeepLinkLoading(false);
         });
 
+        const unsubLogout = EventsOn('auth-logout', (data: { success: boolean; message: string }) => {
+            console.log('Auth logout event received:', data);
+            setDeepLinkLoading(false);
+            clearAuthState();
+            navigate('/login', { replace: true });
+        });
+
         return () => {
             unsubLoading();
             unsubSuccess();
             unsubError();
+            unsubLogout();
         };
-    }, []);
+    }, [navigate]);
 
     const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
         try {
@@ -133,10 +150,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.error('Backend logout error:', error);
         } finally {
             // Clear frontend state regardless of backend result
-            setUser(null);
-            setToken(null);
-            localStorage.removeItem(TOKEN_KEY);
-            localStorage.removeItem(USER_KEY);
+            clearAuthState();
         }
     };
 
