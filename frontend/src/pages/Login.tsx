@@ -4,6 +4,7 @@ import { UserOutlined, LockOutlined, SettingOutlined, SaveOutlined, BankOutlined
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { GetSettings, SaveSettings } from '../../wailsjs/go/app/App';
+import { EventsOn } from '../../wailsjs/runtime/runtime';
 
 const { Text } = Typography;
 
@@ -23,9 +24,30 @@ const Login: React.FC = () => {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [settingsLoading, setSettingsLoading] = useState(false);
     const [settingsSaving, setSettingsSaving] = useState(false);
-    const { login } = useAuth();
+    const { login, deepLinkLoading, isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const [settingsForm] = Form.useForm<SettingFormValues>();
+
+    // Listen for deep link auth success/error notifications
+    useEffect(() => {
+        const unsubSuccess = EventsOn('deep-link-auth-success', (data: { message: string }) => {
+            message.success(data.message || 'Login successful!');
+        });
+        const unsubError = EventsOn('deep-link-auth-error', (data: { message: string }) => {
+            message.error(data.message || 'Deep link login failed');
+        });
+        return () => {
+            unsubSuccess();
+            unsubError();
+        };
+    }, []);
+
+    // Navigate to home when authenticated (handles deep link auth redirect)
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/');
+        }
+    }, [isAuthenticated, navigate]);
 
     const onFinish = async (values: LoginForm) => {
         setLoading(true);
@@ -87,6 +109,22 @@ const Login: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+            {deepLinkLoading && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 1000,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.85)',
+                    backdropFilter: 'blur(4px)',
+                }}>
+                    <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
+                    <p style={{ marginTop: 16, fontSize: 16, color: '#555' }}>Signing in...</p>
+                </div>
+            )}
             <div className="w-full max-w-md">
                 <Card
                     className="w-full shadow-sm"

@@ -560,6 +560,18 @@ func (a *App) HandleDeepLink(deepLinkURL string) {
 	fmt.Println("=== TEST DEEP LINK AUTH ===")
 	fmt.Println("Deep Link URL:", deepLinkURL)
 	fmt.Println("=========================")
+	// Normalize deep link URL: handle "onxrecord://email=..." (missing '?')
+	// by inserting '?' after the scheme so url.Parse can extract query params.
+	const scheme = "onxrecord://"
+	if strings.HasPrefix(deepLinkURL, scheme) {
+		rest := deepLinkURL[len(scheme):]
+		// If the part after scheme doesn't start with '?' and contains '=',
+		// it's likely query params without the '?' separator.
+		if rest != "" && !strings.HasPrefix(rest, "?") && strings.Contains(rest, "=") {
+			deepLinkURL = scheme + "?" + rest
+		}
+	}
+
 	// Parse the URL to extract data/token
 	parsed, err := url.Parse(deepLinkURL)
 	if err != nil {
@@ -581,7 +593,20 @@ func (a *App) HandleDeepLink(deepLinkURL string) {
 	// Validate required parameters
 	if email == "" || token == "" {
 		logger.Error.Printf("Missing required parameters in deep link. Email: %s, Token: %s", email, token)
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "deep-link-auth-error", map[string]interface{}{
+				"message": "Missing required parameters (email or token)",
+			})
+		}
 		return
+	}
+
+	// Emit loading state to frontend
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "deep-link-auth-loading", map[string]interface{}{
+			"message": "Authenticating...",
+			"email":   email,
+		})
 	}
 
 	// Ensure auth service is initialized
@@ -589,6 +614,11 @@ func (a *App) HandleDeepLink(deepLinkURL string) {
 		logger.Error.Printf("Auth service not initialized, initializing...")
 		if a.setting == nil {
 			logger.Error.Printf("Setting service not initialized")
+			if a.ctx != nil {
+				runtime.EventsEmit(a.ctx, "deep-link-auth-error", map[string]interface{}{
+					"message": "Setting service not initialized",
+				})
+			}
 			return
 		}
 		ctx := a.ctx
@@ -608,12 +638,22 @@ func (a *App) HandleDeepLink(deepLinkURL string) {
 	settings, err := a.setting.GetSettings()
 	if err != nil {
 		logger.Error.Printf("Failed to get settings: %v", err)
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "deep-link-auth-error", map[string]interface{}{
+				"message": "Failed to get settings",
+			})
+		}
 		return
 	}
 
 	if settings.BaseUrl == "" {
 		logger.Error.Printf("BaseURL not configured in settings")
 		fmt.Println("ERROR: BaseURL not configured. Please set it in Settings first.")
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "deep-link-auth-error", map[string]interface{}{
+				"message": "Base URL not configured. Please set it in Settings first.",
+			})
+		}
 		return
 	}
 
@@ -623,6 +663,11 @@ func (a *App) HandleDeepLink(deepLinkURL string) {
 	if err != nil {
 		logger.Error.Printf("Deep link auth failed: %v", err)
 		fmt.Printf("ERROR: Deep link auth failed: %v\n", err)
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "deep-link-auth-error", map[string]interface{}{
+				"message": fmt.Sprintf("Authentication failed: %v", err),
+			})
+		}
 		return
 	}
 

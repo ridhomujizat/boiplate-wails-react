@@ -32,6 +32,7 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
     logout: () => Promise<void>;
     isAuthenticated: boolean;
+    deepLinkLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +43,7 @@ const USER_KEY = 'auth_user';
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
+    const [deepLinkLoading, setDeepLinkLoading] = useState(false);
 
     // Load token and user from localStorage on mount
     useEffect(() => {
@@ -62,8 +64,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 });
         }
 
-        const unsubscribe = EventsOn('deep-link-auth-success', (data: { message: string; user: User }) => {
+        const unsubLoading = EventsOn('deep-link-auth-loading', () => {
+            setDeepLinkLoading(true);
+        });
+
+        const unsubSuccess = EventsOn('deep-link-auth-success', (data: { message: string; user: User }) => {
             console.log('Deep link auth success:', data);
+            setDeepLinkLoading(false);
             if (data.user) {
                 setUser(data.user);
                 setToken('deep-link-token');
@@ -81,8 +88,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         });
 
+        const unsubError = EventsOn('deep-link-auth-error', (data: { message: string }) => {
+            console.error('Deep link auth error:', data);
+            setDeepLinkLoading(false);
+        });
+
         return () => {
-            unsubscribe();
+            unsubLoading();
+            unsubSuccess();
+            unsubError();
         };
     }, []);
 
@@ -127,7 +141,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: user !== null }}>
+        <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: user !== null, deepLinkLoading }}>
             {children}
         </AuthContext.Provider>
     );
