@@ -255,6 +255,9 @@ func (a *App) handleMQTTRecordingCommand(payload []byte) {
 			})
 		}
 
+	case "logout":
+		logger.Info.Printf("[MQTT] Logout command received, performing logout...")
+		a.Logout(a.authToken)
 	default:
 		logger.Info.Printf("[MQTT] Unhandled action: %s", msg.Action)
 	}
@@ -301,11 +304,25 @@ func (a *App) Logout(token string) interface{} {
 	response, err := a.auth.Logout(token)
 	if err != nil {
 		logger.Error.Printf("Logout error: %v", err)
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "auth-logout", map[string]interface{}{
+				"success": false,
+				"message": "Logout failed",
+			})
+		}
 		return map[string]interface{}{
 			"success": false,
 			"message": "Logout failed",
 		}
 	}
+
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "auth-logout", map[string]interface{}{
+			"success": true,
+			"message": "Logged out successfully",
+		})
+	}
+
 	return response
 }
 

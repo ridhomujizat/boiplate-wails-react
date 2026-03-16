@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useRef, useCallback } from 'react';
 import { Login, Logout, ConnectMQTT, AuthMe } from '../../wailsjs/go/app/App';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
+import { useNavigate } from 'react-router-dom';
 
 interface Role {
     id: number;
@@ -56,6 +57,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [deepLinkLoading, setDeepLinkLoading] = useState(false);
     const tokenRef = useRef<string | null>(null);
     const validationPromiseRef = useRef<Promise<boolean> | null>(null);
+    const navigate = useNavigate();
 
     const clearSession = useCallback(() => {
         tokenRef.current = null;
@@ -196,12 +198,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setDeepLinkLoading(false);
         });
 
+        const unsubLogout = EventsOn('auth-logout', (data: { success: boolean; message: string }) => {
+            console.log('Auth logout event received:', data);
+            setDeepLinkLoading(false);
+            clearSession();
+            navigate('/login', { replace: true });
+        });
+
         return () => {
             unsubLoading();
             unsubSuccess();
             unsubError();
+            unsubLogout();
         };
-    }, [persistSession]);
+    }, [clearSession, navigate, persistSession]);
 
     const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
         try {
