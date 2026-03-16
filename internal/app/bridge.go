@@ -1,6 +1,9 @@
 package app
 
 import (
+	"time"
+
+	models "onx-screen-record/internal/common/model"
 	"onx-screen-record/internal/pkg/audio"
 	"onx-screen-record/internal/pkg/permission"
 	"onx-screen-record/internal/pkg/recorder"
@@ -31,6 +34,48 @@ type MQTTStatus struct {
 	Connected bool   `json:"connected"`
 	State     string `json:"state"` // disconnected, connecting, connected, reconnecting
 	Message   string `json:"message"`
+}
+
+type UploadHistoryItem struct {
+	ID                 uint   `json:"id"`
+	SessionID          string `json:"sessionId"`
+	FilePath           string `json:"filePath"`
+	Filename           string `json:"filename"`
+	ContentType        string `json:"contentType"`
+	FileSize           int64  `json:"fileSize"`
+	Status             string `json:"status"`
+	AttemptCount       int    `json:"attemptCount"`
+	LastError          string `json:"lastError"`
+	LastHTTPStatus     int    `json:"lastHttpStatus"`
+	UploadID           string `json:"uploadId"`
+	CreatedAt          string `json:"createdAt"`
+	UpdatedAt          string `json:"updatedAt"`
+	LastAttemptAt      string `json:"lastAttemptAt"`
+	NextAttemptAt      string `json:"nextAttemptAt"`
+	SignedURLExpiresAt string `json:"signedUrlExpiresAt"`
+	GCSUploadedAt      string `json:"gcsUploadedAt"`
+	ConfirmedAt        string `json:"confirmedAt"`
+}
+
+// AuthMe validates the current token and returns the active user session.
+func (a *App) AuthMe(token string) interface{} {
+	response, err := a.auth.AuthMe(token)
+	if err != nil {
+		return response
+	}
+
+	if response.Success {
+		a.authToken = token
+	}
+
+	if response.StatusCode == 401 {
+		a.authToken = ""
+		if a.mqtt != nil && a.mqtt.IsConnected() {
+			a.mqtt.Disconnect()
+		}
+	}
+
+	return response
 }
 
 // GetSettings retrieves all settings from the database
@@ -277,6 +322,19 @@ func (a *App) GetMQTTStatus() MQTTStatus {
 	}
 }
 
+func (a *App) GetUploadHistory() []UploadHistoryItem {
+	jobs, err := a.rp.UploadJob.ListAll()
+	if err != nil {
+		return []UploadHistoryItem{}
+	}
+
+	items := make([]UploadHistoryItem, 0, len(jobs))
+	for _, job := range jobs {
+		items = append(items, mapUploadHistoryItem(job))
+	}
+	return items
+}
+
 func (a *App) GetActivitySettings() dtoSetting.ActivitySettingResponse {
 	result, err := a.setting.GetActivitySettings()
 	if err != nil {
@@ -354,4 +412,41 @@ func (a *App) SaveUploadSettings(req dtoSetting.UploadSettingRequest) SaveSettin
 		Success: result.Success,
 		Message: result.Message,
 	}
+}
+
+func mapUploadHistoryItem(job models.UploadJob) UploadHistoryItem {
+	return UploadHistoryItem{
+		ID:                 job.ID,
+		SessionID:          job.SessionID,
+		FilePath:           job.FilePath,
+		Filename:           job.Filename,
+		ContentType:        job.ContentType,
+		FileSize:           job.FileSize,
+		Status:             string(job.Status),
+		AttemptCount:       job.AttemptCount,
+		LastError:          job.LastError,
+		LastHTTPStatus:     job.LastHTTPStatus,
+		UploadID:           job.UploadID,
+		CreatedAt:          formatUploadHistoryTime(job.CreatedAt),
+		UpdatedAt:          formatUploadHistoryTime(job.UpdatedAt),
+		LastAttemptAt:      formatUploadHistoryTimePtr(job.LastAttemptAt),
+		NextAttemptAt:      formatUploadHistoryTimePtr(job.NextAttemptAt),
+		SignedURLExpiresAt: formatUploadHistoryTimePtr(job.SignedURLExpiresAt),
+		GCSUploadedAt:      formatUploadHistoryTimePtr(job.GCSUploadedAt),
+		ConfirmedAt:        formatUploadHistoryTimePtr(job.ConfirmedAt),
+	}
+}
+
+func formatUploadHistoryTime(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.Format(time.RFC3339)
+}
+
+func formatUploadHistoryTimePtr(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return formatUploadHistoryTime(*t)
 }

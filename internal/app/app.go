@@ -1,21 +1,15 @@
 package app
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
-	"onx-screen-record/internal/common/enum"
 	types "onx-screen-record/internal/common/type"
-	"onx-screen-record/internal/pkg/helper"
 	"onx-screen-record/internal/pkg/logger"
 	pathHelper "onx-screen-record/internal/pkg/path-file"
 	"onx-screen-record/internal/pkg/recorder"
@@ -50,6 +44,9 @@ type App struct {
 
 	initialDeepLink string // Store initial deep link URL
 	authToken       string // Store auth token for API calls
+	uploadWake      chan struct{}
+	uploadStop      chan struct{}
+	uploadStopOnce  sync.Once
 }
 
 func NewApp() *App {
@@ -75,6 +72,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.startHTTPServer()
 
 	a.setting = setting.NewService(a.ctx, a.rp)
+	a.startUploadWorker()
 
 	// Initialize auth service with baseURL getter
 	a.auth = auth.NewService(a.ctx, func() (string, error) {
@@ -126,6 +124,7 @@ func (a *App) Login(email string, password string) interface{} {
 	// Check if login was successful by validating token presence
 	if response.Data.Token != "" {
 		a.authToken = response.Data.Token
+		a.resumeBlockedUploads()
 		logger.Info.Printf("Login successful, connecting to MQTT...")
 
 		// Connect to MQTT in goroutine to avoid blocking login response
@@ -243,7 +242,9 @@ func (a *App) handleMQTTRecordingCommand(payload []byte) {
 			logger.Error.Printf("[MQTT] Failed to stop recording: %s", resp.Message)
 		} else {
 			logger.Info.Printf("[MQTT] Recording stopped, saved to: %s", resp.FilePath)
-			go a.uploadRecording(resp.FilePath, msg.SessionId)
+			if err := a.enqueueUploadJob(resp.FilePath, msg.SessionId); err != nil {
+				logger.Error.Printf("[UploadQueue] Failed to enqueue upload: %v", err)
+			}
 		}
 
 		// Emit recording state to frontend
@@ -257,231 +258,6 @@ func (a *App) handleMQTTRecordingCommand(payload []byte) {
 	default:
 		logger.Info.Printf("[MQTT] Unhandled action: %s", msg.Action)
 	}
-}
-
-// uploadRecording uploads the recording file using the signed-URL flow:
-// 1. POST /api/record/upload/init → get signed PUT URL
-// 2. PUT file directly to GCS via signed URL
-// 3. POST /api/record/upload/done → confirm upload
-func (a *App) uploadRecording(filePath, sessionId string) {
-	logger.Info.Printf("[Upload] Starting signed-URL upload for file: %s, session: %s", filePath, sessionId)
-
-	// Get settings
-	settings, err := a.setting.GetSettings()
-	if err != nil {
-		logger.Error.Printf("[Upload] Failed to get settings: %v", err)
-		a.emitUploadEvent(false, filePath, sessionId, 0, nil, "Failed to get settings")
-		return
-	}
-
-	if settings.BaseUrl == "" {
-		logger.Error.Printf("[Upload] BaseUrl is not configured")
-		a.emitUploadEvent(false, filePath, sessionId, 0, nil, "BaseUrl is not configured")
-		return
-	}
-
-	if a.authToken == "" {
-		logger.Error.Printf("[Upload] Auth token is not available")
-		a.emitUploadEvent(false, filePath, sessionId, 0, nil, "Auth token is not available")
-		return
-	}
-
-	// Read the file
-	fileBytes, err := os.ReadFile(filePath)
-	if err != nil {
-		logger.Error.Printf("[Upload] Failed to read file %s: %v", filePath, err)
-		a.emitUploadEvent(false, filePath, sessionId, 0, nil, err.Error())
-		return
-	}
-
-	fileSize := len(fileBytes)
-	filename := filepath.Base(filePath)
-	contentType := "video/webm"
-	if strings.HasSuffix(strings.ToLower(filename), ".mp4") {
-		contentType = "video/mp4"
-	}
-
-	logger.Info.Printf("[Upload] File size: %.2f MB, filename: %s, content_type: %s",
-		float64(fileSize)/(1024*1024), filename, contentType)
-
-	// ── Step 1: POST /api/record/upload/init ──
-	logger.Info.Printf("[Upload] Step 1: Initiating upload...")
-
-	initBody := map[string]interface{}{
-		"session_id":   sessionId,
-		"filename":     filename,
-		"content_type": contentType,
-		"file_size":    fileSize,
-	}
-
-	initURL := fmt.Sprintf("%s/api/record/upload/init", settings.BaseUrl)
-	initResp, err := helper.HTTPRequest(
-		&helper.HTTPRequestPayload{
-			Method: enum.POST,
-			URL:    initURL,
-			Body:   initBody,
-		},
-		&helper.HTTPRequestConfig{
-			Ctx: context.Background(),
-			Headers: http.Header{
-				"Content-Type":  []string{"application/json"},
-				"Authorization": []string{"Bearer " + a.authToken},
-			},
-		},
-	)
-	if err != nil {
-		logger.Error.Printf("[Upload] Step 1 failed: %v", err)
-		a.emitUploadEvent(false, filePath, sessionId, 0, nil, err.Error())
-		return
-	}
-
-	initDataJSON, _ := json.Marshal(initResp.Data)
-	logger.Info.Printf("[Upload] Step 1 response (status %d): %s", initResp.StatusCode, string(initDataJSON))
-
-	if initResp.StatusCode < 200 || initResp.StatusCode >= 300 {
-		logger.Error.Printf("[Upload] Step 1 failed with status %d", initResp.StatusCode)
-		a.emitUploadEvent(false, filePath, sessionId, initResp.StatusCode, initResp.Data, "Init upload failed")
-		return
-	}
-
-	// Parse init response to get upload_url and upload_id
-	initDataMap, ok := initResp.Data.(map[string]interface{})
-	if !ok {
-		logger.Error.Printf("[Upload] Step 1: unexpected response format")
-		a.emitUploadEvent(false, filePath, sessionId, initResp.StatusCode, initResp.Data, "Unexpected init response format")
-		return
-	}
-
-	// Extract data from nested "data" field
-	dataField, ok := initDataMap["data"]
-	if !ok {
-		logger.Error.Printf("[Upload] Step 1: missing 'data' field in response")
-		a.emitUploadEvent(false, filePath, sessionId, initResp.StatusCode, initResp.Data, "Missing data in init response")
-		return
-	}
-
-	dataMap, ok := dataField.(map[string]interface{})
-	if !ok {
-		logger.Error.Printf("[Upload] Step 1: unexpected 'data' field format")
-		a.emitUploadEvent(false, filePath, sessionId, initResp.StatusCode, initResp.Data, "Unexpected data format in init response")
-		return
-	}
-
-	uploadURL, _ := dataMap["upload_url"].(string)
-	uploadID, _ := dataMap["upload_id"].(string)
-
-	if uploadURL == "" || uploadID == "" {
-		logger.Error.Printf("[Upload] Step 1: missing upload_url or upload_id")
-		a.emitUploadEvent(false, filePath, sessionId, initResp.StatusCode, initResp.Data, "Missing upload_url or upload_id")
-		return
-	}
-
-	logger.Info.Printf("[Upload] Step 1 ✓ Got upload_id=%s, upload_url=%s...", uploadID, uploadURL[:min(80, len(uploadURL))])
-
-	// ── Step 2: PUT file to GCS signed URL ──
-	logger.Info.Printf("[Upload] Step 2: Uploading file to GCS...")
-
-	putReq, err := http.NewRequest(http.MethodPut, uploadURL, bytes.NewReader(fileBytes))
-	if err != nil {
-		logger.Error.Printf("[Upload] Step 2: failed to create PUT request: %v", err)
-		a.emitUploadEvent(false, filePath, sessionId, 0, nil, err.Error())
-		return
-	}
-	putReq.Header.Set("Content-Type", contentType)
-
-	httpClient := &http.Client{Timeout: 10 * time.Minute}
-	putResp, err := httpClient.Do(putReq)
-	if err != nil {
-		logger.Error.Printf("[Upload] Step 2: PUT to GCS failed: %v", err)
-		a.emitUploadEvent(false, filePath, sessionId, 0, nil, err.Error())
-		return
-	}
-	defer putResp.Body.Close()
-
-	putBody, _ := io.ReadAll(putResp.Body)
-	logger.Info.Printf("[Upload] Step 2 response: status=%d, body=%s", putResp.StatusCode, string(putBody))
-
-	if putResp.StatusCode < 200 || putResp.StatusCode >= 300 {
-		logger.Error.Printf("[Upload] Step 2: GCS upload failed with status %d", putResp.StatusCode)
-		a.emitUploadEvent(false, filePath, sessionId, putResp.StatusCode, string(putBody), "GCS upload failed")
-		return
-	}
-
-	logger.Info.Printf("[Upload] Step 2 ✓ File uploaded to GCS successfully")
-
-	// ── Step 3: POST /api/record/upload/done ──
-	logger.Info.Printf("[Upload] Step 3: Confirming upload...")
-
-	doneBody := map[string]interface{}{
-		"session_id": sessionId,
-		"upload_id":  uploadID,
-	}
-
-	doneURL := fmt.Sprintf("%s/api/record/upload/done", settings.BaseUrl)
-	doneResp, err := helper.HTTPRequest(
-		&helper.HTTPRequestPayload{
-			Method: enum.POST,
-			URL:    doneURL,
-			Body:   doneBody,
-		},
-		&helper.HTTPRequestConfig{
-			Ctx: context.Background(),
-			Headers: http.Header{
-				"Content-Type":  []string{"application/json"},
-				"Authorization": []string{"Bearer " + a.authToken},
-			},
-		},
-	)
-	if err != nil {
-		logger.Error.Printf("[Upload] Step 3 failed: %v", err)
-		a.emitUploadEvent(false, filePath, sessionId, 0, nil, err.Error())
-		return
-	}
-
-	doneDataJSON, _ := json.Marshal(doneResp.Data)
-	logger.Info.Printf("[Upload] Step 3 response (status %d): %s", doneResp.StatusCode, string(doneDataJSON))
-
-	if doneResp.StatusCode >= 200 && doneResp.StatusCode < 300 {
-		logger.Info.Printf("[Upload] ✓ Upload completed successfully (file: %s, session: %s)", filename, sessionId)
-
-		// Check if we should delete the local file
-		uploadSettings, err := a.setting.GetUploadSettings()
-		if err == nil && uploadSettings.DeleteAfterUpload {
-			if err := os.Remove(filePath); err != nil {
-				logger.Error.Printf("[Upload] Failed to delete local file: %v", err)
-			} else {
-				logger.Info.Printf("[Upload] ✓ Local file deleted: %s", filePath)
-			}
-		}
-
-		a.emitUploadEvent(true, filePath, sessionId, doneResp.StatusCode, doneResp.Data, "")
-	} else {
-		logger.Error.Printf("[Upload] ✗ Upload confirmation failed (status: %d, file: %s, session: %s)",
-			doneResp.StatusCode, filename, sessionId)
-		a.emitUploadEvent(false, filePath, sessionId, doneResp.StatusCode, doneResp.Data, "Upload confirmation failed")
-	}
-}
-
-// emitUploadEvent sends upload status to the frontend
-func (a *App) emitUploadEvent(success bool, filePath, sessionId string, statusCode int, response interface{}, errMsg string) {
-	if a.ctx == nil {
-		return
-	}
-	event := map[string]interface{}{
-		"success":   success,
-		"filePath":  filePath,
-		"sessionId": sessionId,
-	}
-	if statusCode > 0 {
-		event["statusCode"] = statusCode
-	}
-	if response != nil {
-		event["response"] = response
-	}
-	if errMsg != "" {
-		event["error"] = errMsg
-	}
-	runtime.EventsEmit(a.ctx, "recording-uploaded", event)
 }
 
 // ConnectMQTT is an exported method to connect MQTT (callable from frontend)
@@ -535,6 +311,8 @@ func (a *App) Logout(token string) interface{} {
 
 // Requirement represents a status requirement
 func (a *App) Quit() {
+	a.stopUploadWorker()
+
 	// Disconnect MQTT if connected
 	if a.mqtt != nil && a.mqtt.IsConnected() {
 		logger.Info.Printf("Disconnecting MQTT on quit...")
@@ -672,6 +450,7 @@ func (a *App) HandleDeepLink(deepLinkURL string) {
 	// Store JWT token for API calls
 	if response.Data.Token != "" {
 		a.authToken = response.Data.Token
+		a.resumeBlockedUploads()
 		logger.Info.Printf("Deep link auth successful, connecting to MQTT...")
 
 		// Connect to MQTT in goroutine to avoid blocking
@@ -730,6 +509,7 @@ func (a *App) TestDeepLinkAuth(email string, token string) interface{} {
 	// Store JWT token for API calls
 	if response.Data.Token != "" {
 		a.authToken = response.Data.Token
+		a.resumeBlockedUploads()
 	}
 
 	return map[string]interface{}{

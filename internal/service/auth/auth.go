@@ -27,6 +27,7 @@ type IService interface {
 	Login(email string, password string) (dto.LoginResponse, error)
 	DeepLinkAuth(email string, token string) (dto.DeepLinkAuthResponse, error)
 	Logout(token string) (dto.LogoutResponse, error)
+	AuthMe(token string) (dto.AuthMeResponse, error)
 }
 
 func NewService(ctx context.Context, getBaseURL func() (string, error)) IService {
@@ -34,6 +35,55 @@ func NewService(ctx context.Context, getBaseURL func() (string, error)) IService
 		ctx:        ctx,
 		getBaseURL: getBaseURL,
 	}
+}
+
+func extractUser(candidate interface{}) *dto.User {
+	if candidate == nil {
+		return nil
+	}
+
+	jsonBytes, err := helper.JSONToByte(candidate)
+	if err != nil {
+		return nil
+	}
+
+	var user dto.User
+	if err := helper.JSONByteToStruct(jsonBytes, &user); err != nil {
+		return nil
+	}
+
+	if user.ID == 0 && user.Email == "" {
+		return nil
+	}
+
+	return &user
+}
+
+func parseAuthMePayload(data interface{}) (string, *dto.User) {
+	payload, ok := data.(map[string]interface{})
+	if !ok {
+		return "", extractUser(data)
+	}
+
+	message, _ := payload["message"].(string)
+
+	if user := extractUser(payload["user"]); user != nil {
+		return message, user
+	}
+
+	if rawData, exists := payload["data"]; exists {
+		if nestedData, ok := rawData.(map[string]interface{}); ok {
+			if user := extractUser(nestedData["user"]); user != nil {
+				return message, user
+			}
+		}
+
+		if user := extractUser(rawData); user != nil {
+			return message, user
+		}
+	}
+
+	return message, nil
 }
 
 // Login performs user authentication via API
@@ -267,4 +317,75 @@ func (s *Service) Logout(token string) (dto.LogoutResponse, error) {
 
 	logger.Info.Printf("User logged out successfully")
 	return logoutResp, nil
+}
+
+// AuthMe validates the current token and returns the current user data.
+func (s *Service) AuthMe(token string) (dto.AuthMeResponse, error) {
+	if token == "" {
+		return dto.AuthMeResponse{
+			StatusCode: http.StatusUnauthorized,
+			Success:    false,
+			Message:    "Token is required",
+		}, nil
+	}
+
+	baseURL, err := s.getBaseURL()
+	if err != nil {
+		logger.Error.Printf("Failed to get settings: %v", err)
+		return dto.AuthMeResponse{
+			StatusCode: http.StatusInternalServerError,
+			Success:    false,
+			Message:    "Failed to get settings",
+		}, err
+	}
+
+	if baseURL == "" {
+		return dto.AuthMeResponse{
+			StatusCode: http.StatusBadRequest,
+			Success:    false,
+			Message:    "BaseUrl not configured",
+		}, nil
+	}
+
+	apiURL := baseURL + "/api/auth/me"
+	headers := http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + token},
+	}
+
+	response, err := helper.HTTPRequest(&helper.HTTPRequestPayload{
+		Method: enum.GET,
+		URL:    apiURL,
+	}, &helper.HTTPRequestConfig{
+		Headers: headers,
+		Ctx:     s.getContext(),
+	})
+	if err != nil {
+		return dto.AuthMeResponse{
+			StatusCode: http.StatusBadGateway,
+			Success:    false,
+			Message:    "Failed to validate session",
+		}, fmt.Errorf("failed get auth me: %w", err)
+	}
+
+	message, user := parseAuthMePayload(response.Data)
+	result := dto.AuthMeResponse{
+		StatusCode: response.StatusCode,
+		Success:    response.StatusCode >= http.StatusOK && response.StatusCode < http.StatusMultipleChoices,
+		Message:    message,
+		User:       user,
+	}
+
+	if result.Message == "" {
+		switch response.StatusCode {
+		case http.StatusUnauthorized:
+			result.Message = "Unauthorized"
+		case http.StatusOK:
+			result.Message = "Authenticated"
+		default:
+			result.Message = "Session validation completed"
+		}
+	}
+
+	return result, nil
 }

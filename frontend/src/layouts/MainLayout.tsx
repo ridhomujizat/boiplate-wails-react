@@ -8,7 +8,8 @@ import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     VideoCameraOutlined,
-    BarChartOutlined
+    BarChartOutlined,
+    HistoryOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -36,6 +37,11 @@ const MainLayout: React.FC = () => {
             key: '/recording',
             icon: <VideoCameraOutlined />,
             label: 'Recording',
+        },
+        {
+            key: '/record-history',
+            icon: <HistoryOutlined />,
+            label: 'Record History',
         },
         {
             key: '/settings',

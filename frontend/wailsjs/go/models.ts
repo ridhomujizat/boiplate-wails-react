@@ -202,6 +202,52 @@ export namespace app {
 	        this.percentage = source["percentage"];
 	    }
 	}
+	export class UploadHistoryItem {
+	    id: number;
+	    sessionId: string;
+	    filePath: string;
+	    filename: string;
+	    contentType: string;
+	    fileSize: number;
+	    status: string;
+	    attemptCount: number;
+	    lastError: string;
+	    lastHttpStatus: number;
+	    uploadId: string;
+	    createdAt: string;
+	    updatedAt: string;
+	    lastAttemptAt: string;
+	    nextAttemptAt: string;
+	    signedUrlExpiresAt: string;
+	    gcsUploadedAt: string;
+	    confirmedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UploadHistoryItem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.sessionId = source["sessionId"];
+	        this.filePath = source["filePath"];
+	        this.filename = source["filename"];
+	        this.contentType = source["contentType"];
+	        this.fileSize = source["fileSize"];
+	        this.status = source["status"];
+	        this.attemptCount = source["attemptCount"];
+	        this.lastError = source["lastError"];
+	        this.lastHttpStatus = source["lastHttpStatus"];
+	        this.uploadId = source["uploadId"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	        this.lastAttemptAt = source["lastAttemptAt"];
+	        this.nextAttemptAt = source["nextAttemptAt"];
+	        this.signedUrlExpiresAt = source["signedUrlExpiresAt"];
+	        this.gcsUploadedAt = source["gcsUploadedAt"];
+	        this.confirmedAt = source["confirmedAt"];
+	    }
+	}
 
 }
 

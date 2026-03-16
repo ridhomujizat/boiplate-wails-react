@@ -5,6 +5,7 @@ import (
 	"onx-screen-record/internal/repository"
 	"onx-screen-record/internal/repository/activity"
 	"onx-screen-record/internal/repository/setting"
+	"onx-screen-record/internal/repository/uploadjob"
 )
 
 func (a *App) initializeDatabase() error {
@@ -19,8 +20,9 @@ func (a *App) initializeDatabase() error {
 	}
 
 	a.rp = repository.IRepository{
-		Setting:  *setting.NewRepository(database.GetDB()),
-		Activity: *activity.NewRepository(database.GetDB()),
+		Setting:   *setting.NewRepository(database.GetDB()),
+		Activity:  *activity.NewRepository(database.GetDB()),
+		UploadJob: *uploadjob.NewRepository(database.GetDB()),
 	}
 	return nil
 }

@@ -59,3 +59,11 @@ type LogoutResponse struct {
 	Message string `json:"message"`
 	Success bool   `json:"success"`
 }
+
+// AuthMeResponse represents the current authenticated user lookup result.
+type AuthMeResponse struct {
+	StatusCode int    `json:"statusCode"`
+	Success    bool   `json:"success"`
+	Message    string `json:"message"`
+	User       *User  `json:"user,omitempty"`
+}

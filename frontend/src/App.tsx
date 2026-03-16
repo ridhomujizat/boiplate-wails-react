@@ -1,5 +1,6 @@
 import { ConfigProvider } from 'antd';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
@@ -8,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Setting from './pages/Setting';
 import Recording from './pages/Recording';
 import Activity from './pages/Activity';
+import RecordHistory from './pages/RecordHistory';
 
 const theme = {
     token: {
@@ -19,30 +21,49 @@ const theme = {
     },
 };
 
+function AuthSessionWatcher() {
+    const location = useLocation();
+    const { token, validateSession } = useAuth();
+
+    useEffect(() => {
+        if (!token) {
+            return;
+        }
+
+        void validateSession();
+    }, [location.pathname, token, validateSession]);
+
+    return null;
+}
+
 function AppRoutes() {
     const { isAuthenticated } = useAuth();
 
     return (
-        <Routes>
-            <Route
-                path="/login"
-                element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
-            />
-            <Route
-                path="/"
-                element={
-                    <ProtectedRoute>
-                        <MainLayout />
-                    </ProtectedRoute>
-                }
-            >
-                <Route index element={<Home />} />
-                <Route path="settings" element={<Setting />} />
-                <Route path="recording" element={<Recording />} />
-                <Route path="activity" element={<Activity />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <>
+            <AuthSessionWatcher />
+            <Routes>
+                <Route
+                    path="/login"
+                    element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+                />
+                <Route
+                    path="/"
+                    element={
+                        <ProtectedRoute>
+                            <MainLayout />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route index element={<Home />} />
+                    <Route path="settings" element={<Setting />} />
+                    <Route path="recording" element={<Recording />} />
+                    <Route path="record-history" element={<RecordHistory />} />
+                    <Route path="activity" element={<Activity />} />
+                </Route>
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </>
     );
 }
 

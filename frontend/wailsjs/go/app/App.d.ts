@@ -3,6 +3,8 @@
 import {app} from '../models';
 import {dto} from '../models';
 
+export function AuthMe(arg1:string):Promise<any>;
+
 export function CheckAccessibilityPermission():Promise<app.PermissionStatus>;
 
 export function CheckScreenPermission():Promise<app.PermissionStatus>;
@@ -32,6 +34,8 @@ export function GetRecordingStatus():Promise<app.RecordingStatus>;
 export function GetSettings():Promise<dto.SettingResponse>;
 
 export function GetTopApplications(arg1:app.DateRange,arg2:number):Promise<Array<app.TopApplication>>;
+
+export function GetUploadHistory():Promise<Array<app.UploadHistoryItem>>;
 
 export function GetUploadSettings():Promise<dto.UploadSettingResponse>;
 
